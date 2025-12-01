@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建てパフォーマンス（クリック選択版）</title>
+<title>主要資産 円建てパフォーマンス（デザイン調整版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -24,8 +24,7 @@
 
   .ranking-item { transition: transform 0.2s ease, background-color 0.2s; cursor: pointer; border-left: 4px solid transparent; }
   .ranking-item:hover { transform: translateX(4px); background-color: #f8fafc; }
-  /* 選択中のスタイル */
-  .ranking-item.selected { background-color: #f1f5f9; transform: translateX(6px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+  .ranking-item.active-highlight { background-color: #f1f5f9; transform: translateX(6px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 </style>
 </head>
 <body class="p-4 md:p-8 max-w-[1600px] mx-auto bg-slate-50">
@@ -46,7 +45,6 @@
     </div>
   </header>
 
-  <!-- Controls -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
     <div class="lg:col-span-12 card flex flex-wrap gap-2 sm:gap-4 justify-center md:justify-start items-center p-4">
       <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider hidden sm:inline-block">Timeframe</span>
@@ -60,8 +58,6 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-    
-    <!-- Sidebar -->
     <div class="lg:col-span-1 space-y-6 order-2 lg:order-1">
       <div class="card">
         <div class="flex justify-between items-center mb-4">
@@ -83,7 +79,6 @@
       </div>
     </div>
 
-    <!-- Chart -->
     <div class="lg:col-span-3 order-1 lg:order-2 space-y-6">
       <div class="card h-[400px] sm:h-[500px] md:h-[650px] relative p-2 sm:p-6">
         <canvas id="chart"></canvas>
@@ -167,7 +162,7 @@ for (let i = 0; i < 59; i++) {
 let myChart = null;
 let currentPeriod = 'all';
 let activeKeys = Object.keys(db);
-let selectedAssetKey = null; // 選択状態管理
+let selectedAssetKey = null;
 
 function init() {
   createAssetToggles();
@@ -190,8 +185,6 @@ function createAssetToggles() {
         </div>
       </label>
     `;
-    // チェックボックス自体のクリックイベントは別途管理するが、
-    // ここではリスト項目のクリックでの選択切り替えは実装しない（要望通りチェックボックス機能のみ）
     container.appendChild(div);
   });
 }
@@ -209,7 +202,6 @@ function setupEventListeners() {
   document.querySelectorAll('.asset-checkbox').forEach(cb => {
     cb.addEventListener('change', () => {
       activeKeys = Array.from(document.querySelectorAll('.asset-checkbox:checked')).map(c => c.value);
-      // チェックを外したら選択状態も解除する
       if (selectedAssetKey && !activeKeys.includes(selectedAssetKey)) {
         selectedAssetKey = null;
       }
@@ -228,6 +220,11 @@ function setupEventListeners() {
     selectedAssetKey = null;
     updateDashboard();
   });
+  
+  document.getElementById('chart').addEventListener('mouseleave', () => {
+    // 選択状態がなければリセット、あれば何もしない（選択維持）
+    if(!selectedAssetKey) updateDashboard(); 
+  });
 }
 
 function getStartIndex() {
@@ -245,7 +242,6 @@ function updateDashboard() {
     const baseValue = rawData[0];
     const percentageData = rawData.map(v => baseValue ? ((v - baseValue) / baseValue) * 100 : 0);
     
-    // スタイル決定（選択中かどうか）
     const isSelected = selectedAssetKey === key;
     const isDimmed = selectedAssetKey !== null && !isSelected;
 
@@ -259,7 +255,7 @@ function updateDashboard() {
       pointRadius: 0,
       tension: 0.1,
       assetKey: key,
-      order: isSelected ? -1 : (isDimmed ? 1 : 0) // 選択中を最前面、非選択を最背面へ
+      order: isSelected ? -1 : (isDimmed ? 1 : 0)
     };
   });
 
@@ -294,7 +290,7 @@ function updateRankingAndSummary(keys, startIdx) {
 
   performance.forEach((item, index) => {
     const el = document.createElement('div');
-    el.className = `ranking-item p-3 rounded-lg flex items-center justify-between mb-1 ${item.key === selectedAssetKey ? 'selected' : ''}`;
+    el.className = `ranking-item p-3 rounded-lg flex items-center justify-between mb-1 ${item.key === selectedAssetKey ? 'active-highlight' : ''}`;
     el.style.borderLeftColor = item.key === selectedAssetKey ? item.color : 'transparent';
     el.innerHTML = `
       <div class="flex items-center space-x-3">
@@ -308,10 +304,7 @@ function updateRankingAndSummary(keys, startIdx) {
         <div class="text-[10px] text-slate-400">¥${item.endVal.toLocaleString()}</div>
       </div>
     `;
-    
-    // ランキングクリックで選択切り替え
     el.addEventListener('click', () => toggleAssetSelection(item.key));
-    
     rankingList.appendChild(el);
   });
 
@@ -330,14 +323,13 @@ function updateRankingAndSummary(keys, startIdx) {
   document.getElementById('summary-avg').textContent = `${avg > 0 ? '+' : ''}${avg.toFixed(1)}%`;
 }
 
-// 選択状態の切り替えロジック
 function toggleAssetSelection(key) {
   if (selectedAssetKey === key) {
-    selectedAssetKey = null; // 解除
+    selectedAssetKey = null;
   } else {
-    selectedAssetKey = key; // 選択
+    selectedAssetKey = key;
   }
-  updateDashboard(); // 再描画でスタイル反映
+  updateDashboard();
 }
 
 function renderChart() {
@@ -351,21 +343,18 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      // ホバー処理を無効化（Chart.jsのデフォルトのデータセットハイライトなどを切る）
       hover: { mode: null }, 
       interaction: {
         mode: 'nearest',
         axis: 'x',
         intersect: false
       },
-      // クリックイベントで選択処理を実行
       onClick: (e, activeElements, chart) => {
         if (activeElements.length > 0) {
           const index = activeElements[0].datasetIndex;
           const key = chart.data.datasets[index].assetKey;
           toggleAssetSelection(key);
         } else {
-          // 何もないところをクリックしたら解除
           selectedAssetKey = null;
           updateDashboard();
         }
@@ -380,9 +369,7 @@ function renderChart() {
           borderWidth: 1,
           padding: 10,
           titleFont: { weight: 'bold' },
-          itemSort: function(a, b) {
-            return b.raw - a.raw;
-          },
+          itemSort: function(a, b) { return b.raw - a.raw; },
           callbacks: {
             label: function(context) {
               const label = context.dataset.label || '';
@@ -397,26 +384,25 @@ function renderChart() {
           anchor: 'end',
           offset: 0,
           backgroundColor: function(context) {
-             // 選択されていない（グレーアウト中）なら背景を薄く、選択中または全表示なら白
              if (selectedAssetKey !== null && context.dataset.assetKey !== selectedAssetKey) {
-                 return '#f1f5f9';
+                 return '#f8fafc';
              }
              return 'white';
           },
           borderColor: function(context) {
              return context.dataset.borderColor;
           },
+          // 名札のスタイル調整（大きく、余白を広く）
           borderWidth: 2,
-          borderRadius: 4,
+          borderRadius: 6,
           color: function(context) {
-            // グレーアウト中は文字もグレー
             if (selectedAssetKey !== null && context.dataset.assetKey !== selectedAssetKey) {
-                 return '#94a3b8';
+                 return '#cbd5e1';
              }
              return context.dataset.borderColor;
           },
-          font: { weight: 'bold', size: 10 },
-          padding: 4,
+          font: { weight: 'bold', size: 12 }, // フォント拡大
+          padding: { top: 6, bottom: 6, left: 10, right: 10 }, // 余白拡大
           formatter: function(value, context) {
             if (context.dataIndex === context.dataset.data.length - 1) {
               return context.dataset.label;
@@ -427,12 +413,21 @@ function renderChart() {
         }
       },
       layout: {
-        padding: { right: 80 } 
+        // 名札用スペースを確保
+        padding: { right: 120 } 
       },
       scales: {
         x: {
-          grid: { display: false },
-          ticks: { maxTicksLimit: 8, color: '#94a3b8' }
+          grid: { 
+            display: true, // グリッド表示ON
+            color: '#e2e8f0',
+            drawBorder: false
+          },
+          ticks: { 
+            maxTicksLimit: 12, 
+            color: '#64748b', // ラベル色を濃く
+            font: { size: 11, weight: '500' }
+          }
         },
         y: {
           grid: { color: '#f1f5f9' },
