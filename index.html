@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建てパフォーマンス（2025/11データ反映版）</title>
+<title>主要資産 円建てパフォーマンス（2025/11データ反映・修正版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -208,10 +208,6 @@ function setupEventListeners() {
     selectedAssetKey = null;
     updateDashboard();
   });
-  
-  document.getElementById('chart').addEventListener('mouseleave', () => {
-    if(!selectedAssetKey) updateDashboard(); 
-  });
 }
 
 function getStartIndex() {
@@ -395,7 +391,10 @@ function renderChart() {
             }
             return null;
           },
-          display: 'auto'
+          // 修正点：常に表示する（autoだと重なった時に消えるため）
+          display: function(context) {
+             return context.dataIndex === context.dataset.data.length - 1;
+          }
         }
       },
       layout: {
