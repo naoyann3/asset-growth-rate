@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建てパフォーマンス（2025/11データ反映・修正版）</title>
+<title>主要資産 円建てパフォーマンス（ラベル重なり防止版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- datalabelsプラグインは今回カスタム描画に置き換えるため不要ですが、念のため残しても問題ありません -->
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -110,7 +111,6 @@
 <script>
 // =========================================================
 //  DATA DEFINITIONS (2021/01 - 2025/11) : JPY Converted
-//  ※株式分割・為替計算済みデータ
 // =========================================================
 
 const db = {
@@ -207,6 +207,10 @@ function setupEventListeners() {
     activeKeys = [];
     selectedAssetKey = null;
     updateDashboard();
+  });
+  
+  document.getElementById('chart').addEventListener('mouseleave', () => {
+    if(!selectedAssetKey) updateDashboard(); 
   });
 }
 
@@ -315,14 +319,140 @@ function toggleAssetSelection(key) {
   updateDashboard();
 }
 
+// --- CUSTOM PLUGIN FOR SMART LABELS ---
+// ラベルが重なった時に自動で上下にずらし、引出線を描画するプラグイン
+const customLabelPlugin = {
+  id: 'customSmartLabels',
+  afterDatasetsDraw: (chart) => {
+    const ctx = chart.ctx;
+    const datasets = chart.data.datasets;
+    const labelPoints = [];
+
+    // 1. 全データセットの最終点の座標と情報を収集
+    datasets.forEach((ds, i) => {
+      // 選択機能によりグレーアウトしていても位置計算には含める（表示/非表示の判定）
+      // ただし、AssetToggleで非表示(hidden)の場合は除外
+      const meta = chart.getDatasetMeta(i);
+      if (meta.hidden) return;
+
+      const lastIndex = ds.data.length - 1;
+      // データが存在しない場合はスキップ
+      if (ds.data[lastIndex] === null || ds.data[lastIndex] === undefined) return;
+
+      const view = meta.data[lastIndex];
+      
+      if (view) {
+        // 色の判定: 選択機能により薄くなっている場合は文字色も薄くする
+        let color = ds.borderColor;
+        let bgColor = 'white';
+        if (selectedAssetKey !== null && ds.assetKey !== selectedAssetKey) {
+           color = '#cbd5e1'; // 薄いグレー
+           bgColor = '#f8fafc'; // 薄い背景
+        }
+
+        labelPoints.push({
+          index: i,
+          x: view.x,
+          y: view.y, // 元のY座標
+          drawY: view.y, // 描画用Y座標（後で調整）
+          label: ds.label,
+          color: color,
+          bgColor: bgColor,
+          assetKey: ds.assetKey
+        });
+      }
+    });
+
+    // 2. Y座標でソート（上から順に並べる）
+    labelPoints.sort((a, b) => a.y - b.y);
+
+    // 3. 重なり回避ロジック（単純なスタッキング）
+    const minSpacing = 24; // ラベル間の最小間隔(px)
+    
+    // 下方向に押し出し
+    for (let i = 1; i < labelPoints.length; i++) {
+      const prev = labelPoints[i - 1];
+      const curr = labelPoints[i];
+      if (curr.drawY < prev.drawY + minSpacing) {
+        curr.drawY = prev.drawY + minSpacing;
+      }
+    }
+    
+    // 全体が下に下がりすぎないように、重心を元の位置に戻す簡易補正（オプション）
+    // 今回は単純な下方向シフトのみで実装
+
+    // 4. 描画
+    ctx.save();
+    ctx.font = 'bold 12px "Inter", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    const paddingX = 8;
+    const paddingY = 4;
+    const cornerRadius = 4;
+    const labelXOffset = 10; // 点からラベルまでの距離
+
+    labelPoints.forEach(p => {
+      // テキストのサイズ計測
+      const textMetrics = ctx.measureText(p.label);
+      const textWidth = textMetrics.width;
+      const textHeight = 12; // approximate
+      
+      const boxX = chart.chartArea.right + labelXOffset;
+      const boxY = p.drawY - (textHeight + paddingY * 2) / 2;
+      const boxW = textWidth + paddingX * 2;
+      const boxH = textHeight + paddingY * 2;
+
+      // 引出線（元の位置からずれた場合のみ、あるいは常に描画して視線を誘導）
+      ctx.beginPath();
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 1;
+      ctx.moveTo(p.x, p.y); // データ点
+      ctx.lineTo(chart.chartArea.right + 5, p.drawY); // ラベルの左端付近
+      ctx.stroke();
+
+      // 背景ボックス描画（角丸四角形）
+      ctx.fillStyle = p.bgColor;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 1.5;
+      
+      ctx.beginPath();
+      // roundRectは新しいブラウザ対応。念のためpolyfill的な描画
+      const r = cornerRadius;
+      ctx.moveTo(boxX + r, boxY);
+      ctx.lineTo(boxX + boxW - r, boxY);
+      ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + r);
+      ctx.lineTo(boxX + boxW, boxY + boxH - r);
+      ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - r, boxY + boxH);
+      ctx.lineTo(boxX + r, boxY + boxH);
+      ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - r);
+      ctx.lineTo(boxX, boxY + r);
+      ctx.quadraticCurveTo(boxX, boxY, boxX + r, boxY);
+      ctx.closePath();
+      
+      ctx.fill();
+      ctx.stroke();
+
+      // テキスト描画
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.label, boxX + paddingX, p.drawY);
+    });
+
+    ctx.restore();
+  }
+};
+
 function renderChart() {
   const ctx = document.getElementById('chart').getContext('2d');
   Chart.defaults.font.family = "'Inter', sans-serif";
-  Chart.register(ChartDataLabels);
+  
+  // デフォルトのdatalabelsは無効化し、カスタムプラグインを使用
+  // Chart.register(ChartDataLabels); // ここでは登録しない、またはoptionsで無効化
 
   myChart = new Chart(ctx, {
     type: 'line',
     data: { labels: [], datasets: [] },
+    plugins: [customLabelPlugin], // カスタムプラグインを登録
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -362,43 +492,12 @@ function renderChart() {
             }
           }
         },
-        datalabels: {
-          align: 'right',
-          anchor: 'end',
-          offset: 0,
-          backgroundColor: function(context) {
-             if (selectedAssetKey !== null && context.dataset.assetKey !== selectedAssetKey) {
-                 return '#f8fafc';
-             }
-             return 'white';
-          },
-          borderColor: function(context) {
-             return context.dataset.borderColor;
-          },
-          borderWidth: 2,
-          borderRadius: 6,
-          color: function(context) {
-            if (selectedAssetKey !== null && context.dataset.assetKey !== selectedAssetKey) {
-                 return '#cbd5e1';
-             }
-             return context.dataset.borderColor;
-          },
-          font: { weight: 'bold', size: 12 },
-          padding: { top: 6, bottom: 6, left: 10, right: 10 },
-          formatter: function(value, context) {
-            if (context.dataIndex === context.dataset.data.length - 1) {
-              return context.dataset.label;
-            }
-            return null;
-          },
-          // 修正点：常に表示する（autoだと重なった時に消えるため）
-          display: function(context) {
-             return context.dataIndex === context.dataset.data.length - 1;
-          }
-        }
+        // 既存のdatalabels設定は無効化（念のため）
+        datalabels: { display: false }
       },
       layout: {
-        padding: { right: 120 } 
+        // 右側の余白を少し広めに確保（カスタムラベル用）
+        padding: { right: 140 } 
       },
       scales: {
         x: {
