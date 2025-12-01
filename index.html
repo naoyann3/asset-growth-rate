@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建てパフォーマンス比較（2025年11月最新版）</title>
+<title>主要資産 円建てパフォーマンス比較（2025年12月最新版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -12,26 +12,24 @@
   body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f1f5f9; color: #1e293b; }
   .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; }
   
-  /* Custom Scrollbar for Ranking */
   .ranking-scroll::-webkit-scrollbar { width: 6px; }
   .ranking-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
   .ranking-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
   .asset-checkbox:checked + div { background-color: #f8fafc; border-color: currentColor; }
-  .asset-checkbox:focus + div { ring: 2px; ring-offset: 2px; ring-color: currentColor; }
   
   .period-btn { transition: all 0.2s ease; }
   .period-btn.active { background-color: #1e293b; color: white; border-color: #1e293b; transform: scale(1.05); box-shadow: 0 4px 12px rgba(30, 41, 59, 0.25); }
   .period-btn:not(.active):hover { background-color: #e2e8f0; }
 
-  .ranking-item { transition: transform 0.2s ease, background-color 0.2s; cursor: pointer; }
+  .ranking-item { transition: transform 0.2s ease, background-color 0.2s; cursor: pointer; border-left: 4px solid transparent; }
   .ranking-item:hover { transform: translateX(4px); background-color: #f8fafc; }
-  .ranking-item.highlighted { background-color: #f1f5f9; border-left: 4px solid currentColor; }
+  /* サイドバーで選択中のハイライト */
+  .ranking-item.active-highlight { background-color: #f1f5f9; transform: translateX(4px); }
 </style>
 </head>
 <body class="p-4 md:p-8 max-w-[1600px] mx-auto">
 
-  <!-- Header -->
   <header class="mb-8 text-center md:text-left md:flex md:justify-between md:items-end">
     <div>
       <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
@@ -49,7 +47,6 @@
 
   <!-- Controls -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-    <!-- Period Selector -->
     <div class="lg:col-span-12 card flex flex-wrap gap-3 justify-center md:justify-start items-center">
       <span class="text-sm font-bold text-slate-400 mr-2 uppercase tracking-wider">Timeframe</span>
       <button class="period-btn active px-5 py-2 rounded-full border border-slate-200 font-bold text-sm" data-period="all">全期間</button>
@@ -63,39 +60,32 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
     
-    <!-- Sidebar: Asset Selection & Ranking -->
+    <!-- Sidebar -->
     <div class="lg:col-span-1 space-y-6">
-      <!-- Asset Toggles -->
       <div class="card">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Display Assets</h3>
-        <div class="grid grid-cols-2 gap-2" id="asset-toggles">
-          <!-- JS will populate this -->
-        </div>
+        <div class="grid grid-cols-2 gap-2" id="asset-toggles"></div>
         <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between">
            <button id="btn-select-all" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Select All</button>
            <button id="btn-select-none" class="text-xs font-bold text-slate-400 hover:text-slate-600">Clear</button>
         </div>
       </div>
 
-      <!-- Ranking Board -->
       <div class="card h-[calc(100vh-500px)] min-h-[400px] flex flex-col">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex justify-between items-center">
           <span>Performance Rank</span>
           <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500" id="ranking-period-label">全期間</span>
         </h3>
-        <div class="flex-1 overflow-y-auto ranking-scroll pr-1 space-y-1" id="ranking-list">
-          <!-- JS will populate ranking -->
-        </div>
+        <div class="flex-1 overflow-y-auto ranking-scroll pr-1 space-y-1" id="ranking-list"></div>
       </div>
     </div>
 
-    <!-- Main Chart Area -->
+    <!-- Chart -->
     <div class="lg:col-span-3">
       <div class="card h-[600px] md:h-[800px] relative">
         <canvas id="chart"></canvas>
       </div>
       
-      <!-- Summary Footer -->
       <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="card bg-indigo-50 border border-indigo-100">
           <div class="text-xs text-indigo-400 font-bold uppercase mb-1">Top Performer</div>
@@ -114,12 +104,10 @@
         </div>
       </div>
     </div>
-
   </div>
 
 <script>
 // --- DATA PREPARATION ---
-// 2021/01 ~ 2025/11 (59 months) JPY Converted Data
 const db = {
   NVIDIA: [54414,58459,59122,65738,71218,88901,2138,24621,23052,29146,36926,33846,28178,28031,33203,24269,24142,20580,24198,20970,17571,20081,23348,19178,25423,31614,36894,37822,52714,61049,66475,71826,64960,61863,69335,69849,90593,118605,136707,136275,172467,19878,17540,17448,17433,20189,20705,21110,18635,18815,16247,15561,19464,22755,26811,25753,27586,31167,27644],
   GOOGLE: [191372,215441,228380,257275,258311,271283,295508,318296,297511,337545,320717,333391,311438,310501,338443,298605,294300,295841,15496,15035,13845,14057,13933,11575,12862,12264,13777,14630,17117,17276,18878,19816,19540,18823,19648,19699,20627,20758,22842,25674,27130,29311,25711,23878,23803,25022,25302,29754,31664,25649,23182,22691,24737,25383,28921,31481,35942,43277,50005],
@@ -146,7 +134,6 @@ const meta = {
   BNB:    { label:'BNB',    color:'#F3BA2F', type:'crypto' }
 };
 
-// Generate labels (Jan 2021 to Nov 2025)
 const labels = [];
 let startY = 2021, startM = 1;
 for (let i = 0; i < 59; i++) {
@@ -155,12 +142,10 @@ for (let i = 0; i < 59; i++) {
   if (startM > 12) { startM = 1; startY++; }
 }
 
-// Chart Globals
 let myChart = null;
 let currentPeriod = 'all';
-let activeKeys = Object.keys(db); // All active by default
+let activeKeys = Object.keys(db);
 
-// --- INITIALIZATION ---
 function init() {
   createAssetToggles();
   setupEventListeners();
@@ -182,12 +167,13 @@ function createAssetToggles() {
         </div>
       </label>
     `;
+    div.addEventListener('mouseenter', () => highlightChartLine(key));
+    div.addEventListener('mouseleave', () => resetChartLine());
     container.appendChild(div);
   });
 }
 
 function setupEventListeners() {
-  // Period Buttons
   document.querySelectorAll('.period-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -197,7 +183,6 @@ function setupEventListeners() {
     });
   });
 
-  // Checkboxes
   document.querySelectorAll('.asset-checkbox').forEach(cb => {
     cb.addEventListener('change', () => {
       activeKeys = Array.from(document.querySelectorAll('.asset-checkbox:checked')).map(c => c.value);
@@ -205,7 +190,6 @@ function setupEventListeners() {
     });
   });
 
-  // Select All / None
   document.getElementById('btn-select-all').addEventListener('click', () => {
     document.querySelectorAll('.asset-checkbox').forEach(c => c.checked = true);
     activeKeys = Object.keys(db);
@@ -218,7 +202,6 @@ function setupEventListeners() {
   });
 }
 
-// --- CORE LOGIC ---
 function getStartIndex() {
   if (currentPeriod === 'all') return 0;
   const target = `${currentPeriod}/01`;
@@ -229,7 +212,6 @@ function updateDashboard() {
   const startIdx = getStartIndex();
   const slicedLabels = labels.slice(startIdx);
   
-  // Update Chart Data
   const datasets = activeKeys.map(key => {
     const rawData = db[key].slice(startIdx);
     const baseValue = rawData[0];
@@ -238,12 +220,11 @@ function updateDashboard() {
     return {
       label: meta[key].label,
       data: percentageData,
-      rawValues: rawData, // custom prop for tooltip
+      rawValues: rawData,
       borderColor: meta[key].color,
       backgroundColor: meta[key].color,
-      borderWidth: 2.5,
+      borderWidth: 2,
       pointRadius: 0,
-      pointHoverRadius: 6,
       tension: 0.1,
       assetKey: key
     };
@@ -253,7 +234,6 @@ function updateDashboard() {
   myChart.data.datasets = datasets;
   myChart.update();
 
-  // Update Ranking & Summary
   updateRankingAndSummary(activeKeys, startIdx);
   document.getElementById('ranking-period-label').textContent = document.querySelector('.period-btn.active').textContent;
 }
@@ -271,7 +251,6 @@ function updateRankingAndSummary(keys, startIdx) {
     return;
   }
 
-  // Calculate performance
   const performance = keys.map(key => {
     const data = db[key];
     const startVal = data[startIdx];
@@ -280,15 +259,15 @@ function updateRankingAndSummary(keys, startIdx) {
     return { key, change, endVal, label: meta[key].label, color: meta[key].color };
   }).sort((a, b) => b.change - a.change);
 
-  // Render Ranking
   performance.forEach((item, index) => {
     const el = document.createElement('div');
     el.className = `ranking-item p-3 rounded-lg flex items-center justify-between mb-1`;
-    el.style.color = item.color;
+    el.setAttribute('data-key', item.key);
+    el.style.borderLeftColor = item.color; // Show color strip on hover
     el.innerHTML = `
       <div class="flex items-center space-x-3">
         <span class="font-black text-slate-300 w-4 text-center">${index + 1}</span>
-        <span class="font-bold text-sm text-slate-700">${item.label}</span>
+        <span class="font-bold text-sm text-slate-700" style="color:${item.color}">${item.label}</span>
       </div>
       <div class="text-right">
         <div class="font-black text-sm ${item.change > 0 ? 'text-emerald-500' : 'text-rose-500'}">
@@ -298,14 +277,11 @@ function updateRankingAndSummary(keys, startIdx) {
       </div>
     `;
     
-    // Hover interactions
     el.addEventListener('mouseenter', () => highlightChartLine(item.key));
     el.addEventListener('mouseleave', () => resetChartLine());
-    
     rankingList.appendChild(el);
   });
 
-  // Update Summary
   const best = performance[0];
   const worst = performance[performance.length - 1];
   const avg = performance.reduce((sum, p) => sum + p.change, 0) / performance.length;
@@ -321,39 +297,75 @@ function updateRankingAndSummary(keys, startIdx) {
   document.getElementById('summary-avg').textContent = `${avg > 0 ? '+' : ''}${avg.toFixed(1)}%`;
 }
 
+// --- HIGHLIGHT LOGIC ---
+// スポットライト機能: 指定したキー以外を薄くする
 function highlightChartLine(key) {
   myChart.data.datasets.forEach(ds => {
     if (ds.assetKey === key) {
       ds.borderWidth = 5;
-      ds.borderColor = meta[key].color; // ensure pure color
-      ds.backgroundColor = meta[key].color + '20'; // light fill
+      ds.borderColor = meta[key].color; 
+      // 最前面に持ってくる (Chart.js order)
+      ds.order = -1;
     } else {
       ds.borderWidth = 1;
-      ds.borderColor = '#e2e8f0'; // gray out
+      // 透明度を下げてグレーアウト
+      ds.borderColor = '#e2e8f0'; 
+      ds.order = 1;
     }
   });
-  myChart.update('none'); // smooth update
+  myChart.update('none'); // アニメーションなしで即時更新
+
+  // サイドバーのハイライト同期
+  document.querySelectorAll('.ranking-item').forEach(el => {
+    if(el.getAttribute('data-key') === key) {
+      el.classList.add('active-highlight');
+      el.style.backgroundColor = '#f1f5f9';
+    } else {
+      el.classList.remove('active-highlight');
+      el.style.backgroundColor = '';
+    }
+  });
 }
 
 function resetChartLine() {
   myChart.data.datasets.forEach(ds => {
-    ds.borderWidth = 2.5;
+    ds.borderWidth = 2;
     ds.borderColor = meta[ds.assetKey].color;
+    ds.order = 0;
   });
   myChart.update('none');
+  
+  document.querySelectorAll('.ranking-item').forEach(el => {
+    el.classList.remove('active-highlight');
+    el.style.backgroundColor = '';
+  });
 }
 
 // --- CHART RENDER ---
 function renderChart() {
   const ctx = document.getElementById('chart').getContext('2d');
   Chart.defaults.font.family = "'Inter', sans-serif";
-  
+  Chart.register(ChartDataLabels);
+
   myChart = new Chart(ctx, {
     type: 'line',
     data: { labels: [], datasets: [] },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      // ホバー時のインタラクション設定（スポットライト機能の要）
+      onHover: (event, activeElements) => {
+        if (activeElements && activeElements.length > 0) {
+          const activeIndex = activeElements[0].datasetIndex;
+          const activeKey = myChart.data.datasets[activeIndex].assetKey;
+          highlightChartLine(activeKey);
+        } else {
+          // チャート外に出たときはリセットしたいが、マウス移動中はチラつくため、
+          // 明示的にリセットはmouseleaveイベント等で行う方が自然な場合もある。
+          // ここでは要素がない場合リセットする
+           resetChartLine();
+        }
+      },
       interaction: {
         mode: 'index',
         intersect: false,
@@ -368,6 +380,10 @@ function renderChart() {
           borderWidth: 1,
           padding: 10,
           titleFont: { weight: 'bold' },
+          itemSort: function(a, b) {
+            // ツールチップの並び順を数値の高い順（降順）にする
+            return b.raw - a.raw;
+          },
           callbacks: {
             label: function(context) {
               const label = context.dataset.label || '';
@@ -377,23 +393,41 @@ function renderChart() {
             }
           }
         },
+        // 名札（タグ）の設定
         datalabels: {
           align: 'right',
           anchor: 'end',
-          color: function(context) { return context.dataset.borderColor; },
+          offset: 0,
+          backgroundColor: function(context) {
+            return context.dataset.borderColor === '#e2e8f0' ? '#f1f5f9' : 'white';
+          },
+          borderColor: function(context) {
+             return context.dataset.borderColor;
+          },
+          borderWidth: 2,
+          borderRadius: 4,
+          color: function(context) {
+            return context.dataset.borderColor === '#e2e8f0' ? '#94a3b8' : context.dataset.borderColor;
+          },
           font: { weight: 'bold', size: 11 },
+          padding: 4,
           formatter: function(value, context) {
-            // Only show label for the last data point
+            // 最後のデータポイントのみ表示
             if (context.dataIndex === context.dataset.data.length - 1) {
               return context.dataset.label;
             }
             return null;
           },
-          clip: false
+          // 非表示になっている線（グレーアウト）のラベルは目立たなくする、あるいは非表示にする
+          display: function(context) {
+             // 常に表示（autoだと重なったときに消える）
+             return 'auto';
+          }
         }
       },
       layout: {
-        padding: { right: 60 } // Space for datalabels
+        // 右側に名札表示用の余白を確保
+        padding: { right: 80 } 
       },
       scales: {
         x: {
