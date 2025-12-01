@@ -1,5 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主要資産 円建てパフォーマンス（完全版）</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f8fafc; color: #0f172a; }
+  .card { background: white; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; border: 1px solid #f1f5f9; }
+  
+  /* ランキングリストのスクロールバー設定 */
+  .ranking-scroll::-webkit-scrollbar { width: 4px; }
+  .ranking-scroll::-webkit-scrollbar-track { background: transparent; }
+  .ranking-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+  /* チェックボックスのスタイル */
+  .asset-checkbox:checked + div { background-color: #f1f5f9; border-color: currentColor; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
+  
+  /* 期間切り替えボタン */
+  .period-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+  .period-btn.active { background-color: #0f172a; color: white; border-color: #0f172a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3); }
+  .period-btn:not(.active):hover { background-color: #e2e8f0; transform: translateY(-1px); }
+
+  /* ランキングアイテム */
+  .ranking-item { transition: transform 0.2s ease, background-color 0.2s; cursor: pointer; border-left: 4px solid transparent; }
+  .ranking-item:hover { transform: translateX(4px); background-color: #f8fafc; }
+  .ranking-item.active-highlight { background-color: #f1f5f9; transform: translateX(6px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+</style>
+</head>
+<body class="p-4 md:p-8 max-w-[1600px] mx-auto bg-slate-50">
+
+  <!-- ヘッダーエリア -->
+  <header class="mb-8 text-center md:text-left md:flex md:justify-between md:items-end border-b border-slate-200 pb-6">
+    <div>
+      <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-3">
+        Market Performance
+      </h1>
+      <p class="text-slate-500 font-medium flex items-center justify-center md:justify-start gap-2 text-sm md:text-base">
+        <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">JPY BASIS</span>
+        <span>2021.01 - 2025.11 (Split Adjusted)</span>
+      </p>
+    </div>
+    <div class="mt-4 md:mt-0 text-right hidden md:block">
+      <div class="text-[10px] text-slate-400 font-mono tracking-widest uppercase mb-1">Last Updated</div>
+      <div class="text-xl font-bold text-slate-700 font-mono">2025.12.01</div>
+    </div>
+  </header>
+
+  <!-- コントロールエリア（期間選択） -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+    <div class="lg:col-span-12 card flex flex-wrap gap-2 sm:gap-4 justify-center md:justify-start items-center p-4">
+      <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider hidden sm:inline-block">Timeframe</span>
+      <button class="period-btn active px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="all">All Time</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2021">2021~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2022">2022~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2023">2023~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2024">2024~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2025">2025~</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    
+    <!-- サイドバー（資産選択＆ランキング） -->
+    <div class="lg:col-span-1 space-y-6 order-2 lg:order-1">
+      
+      <!-- 資産選択スイッチ -->
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Assets</h3>
+          <div class="flex gap-2">
+            <button id="btn-select-all" class="text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded">All</button>
+            <button id="btn-select-none" class="text-[10px] font-bold text-slate-400 hover:bg-slate-100 px-2 py-1 rounded">Clear</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2" id="asset-toggles"></div>
+      </div>
+
+      <!-- パフォーマンスランキング -->
+      <div class="card h-[500px] lg:h-[calc(100vh-450px)] min-h-[400px] flex flex-col">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex justify-between items-center">
+          <span>Ranking</span>
+          <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500" id="ranking-period-label">All Time</span>
+        </h3>
+        <div class="flex-1 overflow-y-auto ranking-scroll pr-1 space-y-1" id="ranking-list"></div>
+      </div>
+    </div>
+
+    <!-- チャートエリア -->
+    <div class="lg:col-span-3 order-1 lg:order-2 space-y-6">
+      <div class="card h-[400px] sm:h-[500px] md:h-[650px] relative p-2 sm:p-6">
+        <canvas id="chart"></canvas>
+      </div>
+      
+      <!-- サマリーカード -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-indigo-400 font-bold uppercase mb-1 tracking-wider">Top Performer</div>
+          <div class="flex items-baseline gap-2">
+            <div class="text-xl md:text-2xl font-black text-indigo-900 truncate" id="summary-best-name">-</div>
+            <div class="text-sm font-bold text-indigo-600" id="summary-best-val">-</div>
+          </div>
+        </div>
+        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Selection Average</div>
+          <div class="text-xl md:text-2xl font-black text-slate-700" id="summary-avg">-</div>
+        </div>
+        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Worst Performer</div>
+          <div class="flex items-baseline gap-2">
+             <div class="text-xl md:text-2xl font-black text-slate-700 truncate" id="summary-worst-name">-</div>
+             <div class="text-sm font-bold text-slate-500" id="summary-worst-val">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
-// --- DATA PREPARATION (Split Adjusted) ---
+// ==========================================
+//  DATA DEFINITIONS (2021/01 - 2025/11)
+// ==========================================
+
+// ドル建て資産（株式分割調整済み）
 const rawPrices_USD = {
   NVIDIA: [12.99,13.71,13.35,15.01,16.24,20.00,19.49,22.38,20.72,25.57,32.68,29.41,24.49,24.39,27.29,18.55,18.76,15.16,18.16,15.09,12.14,13.50,16.92,14.61,19.54,23.22,27.78,27.75,37.83,42.30,46.73,49.35,43.50,40.78,46.77,49.52,61.53,79.11,90.36,86.40,109.63,123.54,117.02,119.37,121.44,132.76,138.25,134.29,120.07,124.92,108.38,108.92,135.13,157.99,177.87,174.18,186.58,202.49,177.00],
   GOOGLE: [91.37,101.10,103.13,117.68,117.84,122.09,134.73,144.70,133.68,148.05,141.90,144.85,135.30,135.06,139.07,114.11,114.33,108.96,116.32,108.22,95.65,94.51,100.99,88.23,98.84,90.06,103.73,107.34,122.87,119.70,132.72,136.17,130.86,124.08,132.53,139.69,140.10,138.46,150.93,162.78,172.50,182.15,171.54,163.38,165.85,171.11,168.95,189.30,204.02,170.28,154.64,158.80,171.74,176.23,191.90,212.91,243.10,281.19,320.18],
@@ -9,6 +135,7 @@ const rawPrices_USD = {
   BNB: [44.27,210.04,302.18,623.33,353.74,303.25,332.41,464.29,387.59,524.46,623.23,511.70,374.21,395.61,428.84,377.01,320.79,219.39,283.50,279.11,284.89,325.79,300.40,246.10,312.11,301.39,317.10,337.58,306.70,240.40,240.90,216.70,214.50,226.30,227.60,312.00,300.50,399.10,606.89,578.41,593.80,582.30,576.40,532.90,567.51,576.60,653.72,702.39,677.48,587.97,604.80,599.71,657.90,656.90,783.20,857.60,1008.60,1088.71,875.50]
 };
 
+// 円建て資産（元データ）
 const rawPrices_JPY = {
   NIKKEI: [27663,28966,29178,28812,28860,28791,27283,28089,29452,28892,27821,28791,27001,26526,27821,26847,27279,26393,27801,28091,25937,27587,27968,26094,27327,27445,28041,28856,30887,33189,33172,32619,31857,30858,33486,33464,36286,39166,40369,38405,38487,39583,39101,38647,37919,39081,38208,39894,39572,37155,35617,36045,37965,40487,41069,42718,44932,52411,50254],
   SP500: [13641,14043,15142,15861,15975,16444,16777,17277,16951,18163,18432,19204,17837,17684,19683,18851,18669,18301,19236,19417,18548,20365,19380,18035,18524,19213,19167,19670,20875,22664,22984,23519,22940,22238,23926,24281,26026,27391,28559,28832,29510,31789,29851,29198,29562,32262,32695,34182,33955,31801,30280,28788,30919,32527,34608,34812,36175,38371,38984],
@@ -16,23 +143,25 @@ const rawPrices_JPY = {
   SILVER: [88.8,96.0,93.0,93.0,100.1,99.0,94.8,88.2,86.3,87.7,92.0,84.8,88.7,89.7,99.1,102.9,93.4,95.6,86.6,89.0,89.4,93.7,98.2,103.3,101.8,96.6,96.4,109.3,108.9,108.7,111.2,112.2,113.1,110.3,115.8,114.7,110.9,112.0,120.2,137.8,151.3,153.2,154.5,137.9,141.0,158.9,156.5,154.1,156.2,160.3,162.1,153.4,156.3,169.8,180.6,183.7,204.6,243.2,256.6]
 };
 
+// ドル円レート (2021/01 - 2025/11)
 const usdjpy = [104.73,106.57,110.73,109.32,109.60,111.10,109.68,109.99,111.26,114.00,113.01,115.07,115.08,114.95,121.69,130.84,128.70,135.76,133.23,138.95,144.75,148.74,137.97,131.20,130.14,136.18,132.82,136.30,139.33,144.32,142.25,145.53,149.34,151.70,148.26,141.04,147.24,149.92,151.34,157.72,157.28,160.89,149.88,146.17,143.59,152.08,149.77,157.20,155.20,150.62,149.91,142.96,144.04,144.03,150.71,147.86,147.86,153.99,156.18];
 
-// Combine all into DB
+// データを統合して円建てデータベースを作成
 const db = {};
-// USD assets -> JPY
+// USD資産を円換算
 for (const key in rawPrices_USD) {
   db[key] = rawPrices_USD[key].map((p, i) => Math.round(p * usdjpy[i]));
 }
-// JPY assets
+// JPY資産はそのまま
 for (const key in rawPrices_JPY) {
   db[key] = rawPrices_JPY[key];
 }
 
+// 資産のメタデータ（色、ラベル）
 const meta = {
   NVIDIA: { label:'NVIDIA', color:'#76B900', type:'stock' },
   GOOGLE: { label:'Google', color:'#4285F4', type:'stock' },
-  AAPL:   { label:'Apple',  color:'#A2A2A2', type:'stock' },
+  AAPL:   { label:'Apple',  color:'#999999', type:'stock' },
   NIKKEI: { label:'日経平均', color:'#DC2626', type:'index' },
   SP500:  { label:'S&P 500',color:'#3B82F6', type:'index' },
   GOLD:   { label:'Gold',   color:'#D4AF37', type:'commodity' },
@@ -42,6 +171,7 @@ const meta = {
   BNB:    { label:'BNB',    color:'#F3BA2F', type:'crypto' }
 };
 
+// ラベル（年月）生成
 const labels = [];
 let startY = 2021, startM = 1;
 for (let i = 0; i < 59; i++) {
@@ -54,6 +184,7 @@ let myChart = null;
 let currentPeriod = 'all';
 let activeKeys = Object.keys(db);
 
+// --- INITIALIZATION ---
 function init() {
   createAssetToggles();
   setupEventListeners();
@@ -82,6 +213,7 @@ function createAssetToggles() {
 }
 
 function setupEventListeners() {
+  // 期間切り替え
   document.querySelectorAll('.period-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -91,6 +223,7 @@ function setupEventListeners() {
     });
   });
 
+  // 資産チェックボックス
   document.querySelectorAll('.asset-checkbox').forEach(cb => {
     cb.addEventListener('change', () => {
       activeKeys = Array.from(document.querySelectorAll('.asset-checkbox:checked')).map(c => c.value);
@@ -98,6 +231,7 @@ function setupEventListeners() {
     });
   });
 
+  // 全選択・全解除
   document.getElementById('btn-select-all').addEventListener('click', () => {
     document.querySelectorAll('.asset-checkbox').forEach(c => c.checked = true);
     activeKeys = Object.keys(db);
@@ -109,7 +243,7 @@ function setupEventListeners() {
     updateDashboard();
   });
   
-  // マウスがグラフエリアから完全に出たときにリセットを保証する
+  // チャートエリア外に出たらリセット
   document.getElementById('chart').addEventListener('mouseleave', resetChartLine);
 }
 
@@ -126,7 +260,8 @@ function updateDashboard() {
   const datasets = activeKeys.map(key => {
     const rawData = db[key].slice(startIdx);
     const baseValue = rawData[0];
-    const percentageData = rawData.map(v => ((v - baseValue) / baseValue) * 100);
+    // 0除算対策
+    const percentageData = rawData.map(v => baseValue ? ((v - baseValue) / baseValue) * 100 : 0);
     
     return {
       label: meta[key].label,
@@ -166,7 +301,7 @@ function updateRankingAndSummary(keys, startIdx) {
     const data = db[key];
     const startVal = data[startIdx];
     const endVal = data[data.length - 1];
-    const change = ((endVal - startVal) / startVal) * 100;
+    const change = startVal ? ((endVal - startVal) / startVal) * 100 : 0;
     return { key, change, endVal, label: meta[key].label, color: meta[key].color };
   }).sort((a, b) => b.change - a.change);
 
@@ -213,15 +348,16 @@ function highlightChartLine(key) {
     if (ds.assetKey === key) {
       ds.borderWidth = 4;
       ds.borderColor = meta[key].color;
-      ds.order = -1;
+      ds.order = -1; // 最前面へ
     } else {
       ds.borderWidth = 1;
-      ds.borderColor = '#e2e8f0'; 
+      ds.borderColor = '#e2e8f0'; // 薄くする
       ds.order = 1;
     }
   });
   myChart.update('none'); 
 
+  // サイドバーのハイライト連動
   document.querySelectorAll('.ranking-item').forEach(el => {
     if(el.getAttribute('data-key') === key) {
       el.classList.add('active-highlight');
@@ -258,7 +394,7 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      // 修正ポイント：インデックスモードから「nearest（近い要素）」に変更
+      // 修正: 'nearest' モードで最も近い線に反応させる
       interaction: {
         mode: 'nearest',
         axis: 'x',
@@ -270,7 +406,7 @@ function renderChart() {
           const activeKey = myChart.data.datasets[activeIndex].assetKey;
           highlightChartLine(activeKey);
         } else {
-           // チャート内だが空白部分にいる場合のリセット
+           // マウスが空白部分にある場合のリセット
            resetChartLine();
         }
       },
@@ -301,6 +437,7 @@ function renderChart() {
           anchor: 'end',
           offset: 0,
           backgroundColor: function(context) {
+            // ハイライトされていない線（グレー）のラベルは背景を目立たなくする
             return context.dataset.borderColor === '#e2e8f0' ? '#f1f5f9' : 'white';
           },
           borderColor: function(context) {
@@ -314,6 +451,7 @@ function renderChart() {
           font: { weight: 'bold', size: 10 },
           padding: 4,
           formatter: function(value, context) {
+            // 最新のデータポイントにのみラベル表示
             if (context.dataIndex === context.dataset.data.length - 1) {
               return context.dataset.label;
             }
@@ -342,5 +480,8 @@ function renderChart() {
   });
 }
 
+// 起動
 init();
 </script>
+</body>
+</html>
