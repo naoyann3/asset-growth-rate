@@ -1,33 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主要資産 円建てパフォーマンス（完全版）</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f8fafc; color: #0f172a; }
+  .card { background: white; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; border: 1px solid #f1f5f9; }
+  
+  .ranking-scroll::-webkit-scrollbar { width: 4px; }
+  .ranking-scroll::-webkit-scrollbar-track { background: transparent; }
+  .ranking-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+  .asset-checkbox:checked + div { background-color: #f1f5f9; border-color: currentColor; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
+  
+  .period-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+  .period-btn.active { background-color: #0f172a; color: white; border-color: #0f172a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3); }
+  .period-btn:not(.active):hover { background-color: #e2e8f0; transform: translateY(-1px); }
+
+  .ranking-item { transition: transform 0.2s ease, background-color 0.2s; cursor: pointer; border-left: 4px solid transparent; }
+  .ranking-item:hover { transform: translateX(4px); background-color: #f8fafc; }
+  .ranking-item.active-highlight { background-color: #f1f5f9; transform: translateX(6px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+</style>
+</head>
+<body class="p-4 md:p-8 max-w-[1600px] mx-auto bg-slate-50">
+
+  <header class="mb-8 text-center md:text-left md:flex md:justify-between md:items-end border-b border-slate-200 pb-6">
+    <div>
+      <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-3">
+        Market Performance
+      </h1>
+      <p class="text-slate-500 font-medium flex items-center justify-center md:justify-start gap-2 text-sm md:text-base">
+        <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">JPY BASIS</span>
+        <span>2021.01 - 2025.11 (Stock Split Adjusted)</span>
+      </p>
+    </div>
+    <div class="mt-4 md:mt-0 text-right hidden md:block">
+      <div class="text-[10px] text-slate-400 font-mono tracking-widest uppercase mb-1">Last Updated</div>
+      <div class="text-xl font-bold text-slate-700 font-mono">2025.12.01</div>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+    <div class="lg:col-span-12 card flex flex-wrap gap-2 sm:gap-4 justify-center md:justify-start items-center p-4">
+      <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider hidden sm:inline-block">Timeframe</span>
+      <button class="period-btn active px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="all">All Time</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2021">2021~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2022">2022~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2023">2023~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2024">2024~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2025">2025~</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div class="lg:col-span-1 space-y-6 order-2 lg:order-1">
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Assets</h3>
+          <div class="flex gap-2">
+            <button id="btn-select-all" class="text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded">All</button>
+            <button id="btn-select-none" class="text-[10px] font-bold text-slate-400 hover:bg-slate-100 px-2 py-1 rounded">Clear</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2" id="asset-toggles"></div>
+      </div>
+
+      <div class="card h-[500px] lg:h-[calc(100vh-450px)] min-h-[400px] flex flex-col">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex justify-between items-center">
+          <span>Ranking</span>
+          <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500" id="ranking-period-label">All Time</span>
+        </h3>
+        <div class="flex-1 overflow-y-auto ranking-scroll pr-1 space-y-1" id="ranking-list"></div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-3 order-1 lg:order-2 space-y-6">
+      <div class="card h-[400px] sm:h-[500px] md:h-[650px] relative p-2 sm:p-6">
+        <canvas id="chart"></canvas>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-indigo-400 font-bold uppercase mb-1 tracking-wider">Top Performer</div>
+          <div class="flex items-baseline gap-2">
+            <div class="text-xl md:text-2xl font-black text-indigo-900 truncate" id="summary-best-name">-</div>
+            <div class="text-sm font-bold text-indigo-600" id="summary-best-val">-</div>
+          </div>
+        </div>
+        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Selection Average</div>
+          <div class="text-xl md:text-2xl font-black text-slate-700" id="summary-avg">-</div>
+        </div>
+        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Worst Performer</div>
+          <div class="flex items-baseline gap-2">
+             <div class="text-xl md:text-2xl font-black text-slate-700 truncate" id="summary-worst-name">-</div>
+             <div class="text-sm font-bold text-slate-500" id="summary-worst-val">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
-// ==========================================
-//  DATA DEFINITIONS (2021/01 - 2025/11)
-// ==========================================
+// =========================================================
+//  DATA DEFINITIONS (2021/01 - 2025/11) : JPY Converted
+// =========================================================
 
-const rawPrices_USD = {
-  NVIDIA: [12.99,13.71,13.35,15.01,16.24,20.00,19.49,22.38,20.72,25.57,32.68,29.41,24.49,24.39,27.29,18.55,18.76,15.16,18.16,15.09,12.14,13.50,16.92,14.61,19.54,23.22,27.78,27.75,37.83,42.30,46.73,49.35,43.50,40.78,46.77,49.52,61.53,79.11,90.36,86.40,109.63,123.54,117.02,119.37,121.44,132.76,138.25,134.29,120.07,124.92,108.38,108.92,135.13,157.99,177.87,174.18,186.58,202.49,177.00],
-  GOOGLE: [91.37,101.10,103.13,117.68,117.84,122.09,134.73,144.70,133.68,148.05,141.90,144.85,135.30,135.06,139.07,114.11,114.33,108.96,116.32,108.22,95.65,94.51,100.99,88.23,98.84,90.06,103.73,107.34,122.87,119.70,132.72,136.17,130.86,124.08,132.53,139.69,140.10,138.46,150.93,162.78,172.50,182.15,171.54,163.38,165.85,171.11,168.95,189.30,204.02,170.28,154.64,158.80,171.74,176.23,191.90,212.91,243.10,281.19,320.18],
-  AAPL: [131.96,121.26,122.15,131.46,124.61,136.96,145.86,151.83,141.50,149.80,165.30,177.57,174.78,165.12,174.61,157.65,149.30,136.72,162.51,157.22,138.20,153.34,148.03,129.93,144.29,147.41,164.90,169.68,177.25,193.97,196.45,187.87,171.21,170.77,189.95,192.53,184.40,180.75,171.48,170.33,192.25,210.62,222.08,229.00,233.00,225.91,237.33,250.42,236.00,241.84,222.13,212.50,200.85,205.17,207.57,232.14,254.63,270.37,278.85],
-  BTC: [33108,45164,58763,57720,37298,35026,41553,47130,43823,61309,56882,46219,38498,43188,45525,37650,31793,19926,23303,20043,19423,20496,17163,16537,23125,23130,28473,29252,27216,30472,29232,25937,26962,34650,37712,42272,42580,61169,71332,60666,67530,62754,64626,58978,63339,70281,96405,93557,94536,84381,82548,94184,104598,107171,115765,108226,114048,109602,90374],
-  ETH: [1312,1418,1917,2772,2708,2273,2532,3430,3000,4287,4628,3677,2686,2922,3282,2727,1941,1069,1680,1555,1328,1572,1294,1195,1585,1604,1821,1868,1873,1933,1856,1645,1670,1815,2051,2281,2283,3339,3647,3014,3762,3437,3231,2513,2603,2519,3702,3337,3298,2236,1821,1793,2528,2486,3698,4391,4144,3848,2991],
-  BNB: [44.27,210.04,302.18,623.33,353.74,303.25,332.41,464.29,387.59,524.46,623.23,511.70,374.21,395.61,428.84,377.01,320.79,219.39,283.50,279.11,284.89,325.79,300.40,246.10,312.11,301.39,317.10,337.58,306.70,240.40,240.90,216.70,214.50,226.30,227.60,312.00,300.50,399.10,606.89,578.41,593.80,582.30,576.40,532.90,567.51,576.60,653.72,702.39,677.48,587.97,604.80,599.71,657.90,656.90,783.20,857.60,1008.60,1088.71,875.50]
-};
-
-const rawPrices_JPY = {
-  NIKKEI: [27663,28966,29178,28812,28860,28791,27283,28089,29452,28892,27821,28791,27001,26526,27821,26847,27279,26393,27801,28091,25937,27587,27968,26094,27327,27445,28041,28856,30887,33189,33172,32619,31857,30858,33486,33464,36286,39166,40369,38405,38487,39583,39101,38647,37919,39081,38208,39894,39572,37155,35617,36045,37965,40487,41069,42718,44932,52411,50254],
+const db = {
+  NVIDIA: [54414,58459,59122,65638,71218,88901,85507,98485,92207,116585,147705,135383,112713,112125,132813,97075,96569,82321,96793,83881,70283,80323,93394,76710,101691,126457,147575,151288,210857,244197,265901,287306,259842,247453,277341,279396,362371,474420,546828,545099,689869,795123,701595,697932,697330,807560,828210,844411,745395,752618,649878,622434,778561,910217,1072427,1030123,1103423,1246676,1105754],
+  GOOGLE: [191372,215441,228380,257275,258311,271283,295508,318296,297511,337545,320717,333391,311438,310501,338443,298605,294300,295841,309923,300702,276907,281141,278672,231494,257242,245278,275548,292609,342347,345510,377556,396323,390808,376459,392965,393980,412544,415160,456846,513485,542593,586227,514220,477564,476063,500432,506039,595082,633278,512983,463640,453822,494749,507651,578416,629629,718843,865541,1000103],
+  AAPL: [13819,12925,13526,14374,13657,15216,16000,16699,15745,17077,18681,20432,20113,18981,21250,20626,19215,18561,21650,21841,20005,22809,20423,17043,18776,20074,21891,23127,24697,28004,27944,27341,25568,25906,28159,27155,27156,27098,25945,26864,30233,33889,33284,33468,33456,34357,35545,39366,36627,36424,33300,30379,28931,29551,31283,34321,37644,41614,43551],
+  NIKKEI: [27663,28966,29178,28813,28860,28792,27284,28090,29453,28893,27822,28792,27002,26527,27821,26848,27280,26393,27802,28092,25937,27587,27969,26095,27327,27446,28041,28856,30888,33189,33172,32619,31858,30859,33487,33464,36287,39166,40369,38406,38488,39583,39102,38648,37920,39081,38208,39895,39572,37156,35618,36045,37965,40487,41070,42718,44933,52411,50254],
   SP500: [13641,14043,15142,15861,15975,16444,16777,17277,16951,18163,18432,19204,17837,17684,19683,18851,18669,18301,19236,19417,18548,20365,19380,18035,18524,19213,19167,19670,20875,22664,22984,23519,22940,22238,23926,24281,26026,27391,28559,28832,29510,31789,29851,29198,29562,32262,32695,34182,33955,31801,30280,28788,30919,32527,34608,34812,36175,38371,38984],
   GOLD: [6276,6199,6066,6195,6549,6554,6450,6369,6368,6495,6728,6580,6755,6913,7464,7901,7695,7954,7699,7721,7794,7920,7944,7854,8024,7990,8249,8620,8822,8871,8879,8988,9155,9246,9604,9486,9622,9779,10428,11561,11880,11859,12185,11675,11863,12978,13155,13082,13676,14169,14298,14996,15349,15638,15832,16020,17429,19828,20454],
-  SILVER: [88.8,96.0,93.0,93.0,100.1,99.0,94.8,88.2,86.3,87.7,92.0,84.8,88.7,89.7,99.1,102.9,93.4,95.6,86.6,89.0,89.4,93.7,98.2,103.3,101.8,96.6,96.4,109.3,108.9,108.7,111.2,112.2,113.1,110.3,115.8,114.7,110.9,112.0,120.2,137.8,151.3,153.2,154.5,137.9,141.0,158.9,156.5,154.1,156.2,160.3,162.1,153.4,156.3,169.8,180.6,183.7,204.6,243.2,256.6]
+  SILVER: [89,96,93,93,100,99,95,88,86,88,92,85,89,90,99,103,93,96,87,89,89,94,98,103,102,97,96,109,109,109,111,112,113,110,116,115,111,112,120,138,151,153,155,138,141,159,157,154,156,160,162,153,156,170,181,184,205,243,257],
+  BTC: [3467557,4813675,6507676,6310030,4088027,3891489,4557750,5183873,4875342,6989294,6428337,5319007,4430489,4964484,5540012,4925250,4091192,2705066,3103425,2785170,2811424,3048933,2368041,2169712,3009478,3149604,3779598,3987163,3792091,4397975,4159102,3774683,4026381,5256500,5591733,5961862,6269113,9170140,10792036,9569960,10622342,10096447,9686116,8620933,9095437,10688597,14438361,14707594,14672003,12710027,12374921,13463700,15066900,15436001,17446478,15999985,16864269,16870246,14114830],
+  ETH: [137476,151211,212398,303131,296848,252624,277722,377347,333905,488782,523112,423246,309194,335941,399414,356876,249902,145130,223802,216084,192352,233969,178580,156913,206290,218527,241756,254729,261009,279091,264064,239522,249461,275355,304115,321830,336133,500617,552008,475446,591859,552999,484374,367390,373903,383111,554611,524639,511957,336839,273131,256403,364154,358133,557301,649540,612853,592238,467235],
+  BNB: [4636,22386,33459,68154,38769,33691,36460,51067,43124,59788,70432,58888,43066,45475,52183,49322,41278,29780,37769,38784,41238,48460,41446,32288,40618,41041,42027,46011,42735,34695,34269,31535,32039,34329,33752,44005,44243,59834,91833,91223,93391,93700,86392,77882,81481,87694,97910,110416,105145,88591,90666,85733,94766,94614,118042,126812,149139,167566,136738]
 };
-
-const usdjpy = [104.73,106.57,110.73,109.32,109.60,111.10,109.68,109.99,111.26,114.00,113.01,115.07,115.08,114.95,121.69,130.84,128.70,135.76,133.23,138.95,144.75,148.74,137.97,131.20,130.14,136.18,132.82,136.30,139.33,144.32,142.25,145.53,149.34,151.70,148.26,141.04,147.24,149.92,151.34,157.72,157.28,160.89,149.88,146.17,143.59,152.08,149.77,157.20,155.20,150.62,149.91,142.96,144.04,144.03,150.71,147.86,147.86,153.99,156.18];
-
-const db = {};
-for (const key in rawPrices_USD) {
-  db[key] = rawPrices_USD[key].map((p, i) => Math.round(p * usdjpy[i]));
-}
-for (const key in rawPrices_JPY) {
-  db[key] = rawPrices_JPY[key];
-}
 
 const meta = {
   NVIDIA: { label:'NVIDIA', color:'#76B900', type:'stock' },
