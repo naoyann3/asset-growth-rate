@@ -2,294 +2,533 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>主要資産 円建てパフォーマンス・トラッカー (2021年〜)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主要資産 円建てパフォーマンス（完全版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-    body { font-family: 'Noto Sans JP', sans-serif; background-color: #f1f5f9; }
-    .mono { font-family: 'Roboto Mono', monospace; }
-    .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
-    
-    /* チェックボックスのカスタムスタイル */
-    .asset-checkbox:checked + label {
-        background-color: var(--active-color);
-        color: white !important;
-        border-color: var(--active-color);
-    }
-    .asset-checkbox:checked + label svg { transform: scale(1); }
-    .asset-checkbox:checked + label .check-circle { border-color: white; }
+  body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f8fafc; color: #0f172a; }
+  .card { background: white; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; border: 1px solid #f1f5f9; }
+  
+  .ranking-scroll::-webkit-scrollbar { width: 4px; }
+  .ranking-scroll::-webkit-scrollbar-track { background: transparent; }
+  .ranking-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+  .asset-checkbox:checked + div { background-color: #f1f5f9; border-color: currentColor; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
+  
+  .period-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+  .period-btn.active { background-color: #0f172a; color: white; border-color: #0f172a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3); }
+  .period-btn:not(.active):hover { background-color: #e2e8f0; transform: translateY(-1px); }
+
+  .ranking-item { transition: transform 0.2s ease, background-color 0.2s; cursor: pointer; border-left: 4px solid transparent; }
+  .ranking-item:hover { transform: translateX(4px); background-color: #f8fafc; }
+  .ranking-item.active-highlight { background-color: #f1f5f9; transform: translateX(6px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 </style>
 </head>
-<body class="p-3 md:p-8 text-slate-800">
+<body class="p-4 md:p-8 max-w-[1600px] mx-auto bg-slate-50">
 
-<div class="max-w-7xl mx-auto space-y-6">
+  <header class="mb-8 text-center md:text-left md:flex md:justify-between md:items-end border-b border-slate-200 pb-6">
+    <div>
+      <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-3">
+        Market Performance
+      </h1>
+      <p class="text-slate-500 font-medium flex items-center justify-center md:justify-start gap-2 text-sm md:text-base">
+        <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">JPY BASIS</span>
+        <span>2021.01 - 2025.11 (Stock Split Adjusted)</span>
+      </p>
+    </div>
+    <div class="mt-4 md:mt-0 text-right hidden md:block">
+      <div class="text-[10px] text-slate-400 font-mono tracking-widest uppercase mb-1">Last Updated</div>
+      <div class="text-xl font-bold text-slate-700 font-mono">2025.12.01</div>
+    </div>
+  </header>
 
-    <!-- ヘッダー -->
-    <div class="bg-slate-800 text-white p-6 rounded-2xl shadow-lg">
-        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
-            📈 主要資産 円建てパフォーマンス・トラッカー
-        </h1>
-        <p class="text-xs text-slate-400 mt-1">2021年1月に100万円を投資した場合の資産推移</p>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+    <div class="lg:col-span-12 card flex flex-wrap gap-2 sm:gap-4 justify-center md:justify-start items-center p-4">
+      <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider hidden sm:inline-block">Timeframe</span>
+      <button class="period-btn active px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="all">All Time</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2021">2021~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2022">2022~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2023">2023~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2024">2024~</button>
+      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2025">2025~</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div class="lg:col-span-1 space-y-6 order-2 lg:order-1">
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Assets</h3>
+          <div class="flex gap-2">
+            <button id="btn-select-all" class="text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded">All</button>
+            <button id="btn-select-none" class="text-[10px] font-bold text-slate-400 hover:bg-slate-100 px-2 py-1 rounded">Clear</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2" id="asset-toggles"></div>
+      </div>
+
+      <div class="card h-[500px] lg:h-[calc(100vh-450px)] min-h-[400px] flex flex-col">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex justify-between items-center">
+          <span>Ranking</span>
+          <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500" id="ranking-period-label">All Time</span>
+        </h3>
+        <div class="flex-1 overflow-y-auto ranking-scroll pr-1 space-y-1" id="ranking-list"></div>
+      </div>
     </div>
 
-    <!-- アセット選択エリア -->
-    <div class="card p-5">
-        <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4 border-b pb-2">表示アセットを選択</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- 暗号資産 -->
-            <div>
-                <p class="font-bold text-slate-700 mb-3 text-sm">🪙 暗号資産</p>
-                <div class="space-y-2" id="crypto-assets"></div>
-            </div>
-            <!-- 株式・指数 -->
-            <div>
-                <p class="font-bold text-slate-700 mb-3 text-sm">💹 株式・指数</p>
-                <div class="space-y-2" id="stock-assets"></div>
-            </div>
-            <!-- コモディティ -->
-            <div>
-                <p class="font-bold text-slate-700 mb-3 text-sm">💎 コモディティ</p>
-                <div class="space-y-2" id="commodity-assets"></div>
-            </div>
+    <div class="lg:col-span-3 order-1 lg:order-2 space-y-6">
+      <div class="card h-[400px] sm:h-[500px] md:h-[650px] relative p-2 sm:p-6">
+        <canvas id="chart"></canvas>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-indigo-400 font-bold uppercase mb-1 tracking-wider">Top Performer</div>
+          <div class="flex items-baseline gap-2">
+            <div class="text-xl md:text-2xl font-black text-indigo-900 truncate" id="summary-best-name">-</div>
+            <div class="text-sm font-bold text-indigo-600" id="summary-best-val">-</div>
+          </div>
         </div>
+        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Selection Average</div>
+          <div class="text-xl md:text-2xl font-black text-slate-700" id="summary-avg">-</div>
+        </div>
+        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-4">
+          <div class="text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Worst Performer</div>
+          <div class="flex items-baseline gap-2">
+             <div class="text-xl md:text-2xl font-black text-slate-700 truncate" id="summary-worst-name">-</div>
+             <div class="text-sm font-bold text-slate-500" id="summary-worst-val">-</div>
+          </div>
+        </div>
+      </div>
     </div>
-    
-    <!-- メインチャートエリア -->
-    <div class="card p-4 md:p-6">
-        <!-- 期間フィルターボタン -->
-        <div class="flex flex-wrap gap-2 mb-4 border-b pb-4 justify-center md:justify-start">
-            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-slate-700 text-white shadow-inner" data-year="all" onclick="setRange('all', this)">全期間</button>
-            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2021', this)">2021年</button>
-            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2022', this)">2022年</button>
-            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2023', this)">2023年</button>
-            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2024', this)">2024年</button>
-            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2025', this)">2025年</button>
-        </div>
-        <div class="h-[500px] w-full relative">
-            <canvas id="chart"></canvas>
-        </div>
-        <p class="text-[10px] text-slate-400 text-right mt-4">※2021年1月に100万円を投資した際の円建て評価額の推移 (株式分割・為替変動を考慮)</p>
-    </div>
-
-    <!-- 解説エリア -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="card p-5 border-t-4 border-purple-400">
-            <h3 class="font-bold text-lg text-purple-700 mb-2">2021年 : 金融緩和バブル</h3>
-            <p class="text-sm text-slate-600 leading-relaxed">
-                コロナ禍の金融緩和を背景に、ほぼ全ての資産が上昇。特に暗号資産は凄まじい伸びを見せ、**BTCは年初来2倍以上**に。NVIDIAも頭角を現し始める。
-            </p>
-        </div>
-        <div class="card p-5 border-t-4 border-slate-400">
-            <h3 class="font-bold text-lg text-slate-700 mb-2">2022年 : 冬の時代</h3>
-            <p class="text-sm text-slate-600 leading-relaxed">
-                FRBの急激な利上げにより、リスク資産が暴落。ハイテク株や暗号資産は軒並み**年初来-50%を下回る**大ダメージ。一方、安全資産のGOLDは底堅く推移。
-            </p>
-        </div>
-        <div class="card p-5 border-t-4 border-emerald-400">
-            <h3 class="font-bold text-lg text-emerald-700 mb-2">2023年〜 : AI革命と回復</h3>
-            <p class="text-sm text-slate-600 leading-relaxed">
-                NVIDIAがAIブームを牽引し、株価は**驚異的な上昇**を記録。BTCも現物ETF承認期待で回復基調に。GOLDは地政学リスクの高まりから史上最高値を更新し続ける。
-            </p>
-        </div>
-    </div>
-</div>
+  </div>
 
 <script>
-    const assetConfig = {
-        'BTC': { name: 'Bitcoin', category: 'crypto', color: '#F7931A' },
-        'ETH': { name: 'Ethereum', category: 'crypto', color: '#627EEA' },
-        'BNB': { name: 'BNB', category: 'crypto', color: '#1e1e1e' },
-        'S&P 500 (円)': { name: 'S&P 500 (円建)', category: 'stock', color: '#3B82F6', checked: true },
-        '日経平均': { name: '日経平均', category: 'stock', color: '#DC2626' },
-        'NVIDIA': { name: 'NVIDIA', category: 'stock', color: '#76B900', checked: true },
-        'AMAZON': { name: 'Amazon', category: 'stock', color: '#14B8A6' },
-        'GOOGLE': { name: 'Google', category: 'stock', color: '#8B5CF6' },
-        'GOLD': { name: 'Gold', category: 'commodity', color: '#D4AF37', checked: true },
-        'SILVER': { name: 'Silver', category: 'commodity', color: '#A8A8A8' }
-    };
+// =========================================================
+//  DATA DEFINITIONS (2021/01 - 2025/11) : JPY Converted
+// =========================================================
 
-    const labels = [];
-    for (let y = 2021; y <= 2025; y++) {
-        for (let m = 1; m <= 12; m++) {
-            if (y === 2025 && m > 11) break;
-            labels.push(`${y}-${String(m).padStart(2, '0')}`);
-        }
-    }
+const db = {
+  NVIDIA: [54414,58459,59122,65638,71218,88901,85507,98485,92207,116585,147705,135383,112713,112125,132813,97075,96569,82321,96793,83881,70283,80323,93394,76710,101691,126457,147575,151288,210857,244197,265901,287306,259842,247453,277341,279396,362371,474420,546828,545099,689869,795123,701595,697932,697330,807560,828210,844411,745395,752618,649878,622434,778561,910217,1072427,1030123,1103423,1246676,1105754],
+  GOOGLE: [191372,215441,228380,257275,258311,271283,295508,318296,297511,337545,320717,333391,311438,310501,338443,298605,294300,295841,309923,300702,276907,281141,278672,231494,257242,245278,275548,292609,342347,345510,377556,396323,390808,376459,392965,393980,412544,415160,456846,513485,542593,586227,514220,477564,476063,500432,506039,595082,633278,512983,463640,453822,494749,507651,578416,629629,718843,865541,1000103],
+  AAPL: [13819,12925,13526,14374,13657,15216,16000,16699,15745,17077,18681,20432,20113,18981,21250,20626,19215,18561,21650,21841,20005,22809,20423,17043,18776,20074,21891,23127,24697,28004,27944,27341,25568,25906,28159,27155,27156,27098,25945,26864,30233,33889,33284,33468,33456,34357,35545,39366,36627,36424,33300,30379,28931,29551,31283,34321,37644,41614,43551],
+  NIKKEI: [27663,28966,29178,28813,28860,28792,27284,28090,29453,28893,27822,28792,27002,26527,27821,26848,27280,26393,27802,28092,25937,27587,27969,26095,27327,27446,28041,28856,30888,33189,33172,32619,31858,30859,33487,33464,36287,39166,40369,38406,38488,39583,39102,38648,37920,39081,38208,39895,39572,37156,35618,36045,37965,40487,41070,42718,44933,52411,50254],
+  SP500: [13641,14043,15142,15861,15975,16444,16777,17277,16951,18163,18432,19204,17837,17684,19683,18851,18669,18301,19236,19417,18548,20365,19380,18035,18524,19213,19167,19670,20875,22664,22984,23519,22940,22238,23926,24281,26026,27391,28559,28832,29510,31789,29851,29198,29562,32262,32695,34182,33955,31801,30280,28788,30919,32527,34608,34812,36175,38371,38984],
+  GOLD: [6276,6199,6066,6195,6549,6554,6450,6369,6368,6495,6728,6580,6755,6913,7464,7901,7695,7954,7699,7721,7794,7920,7944,7854,8024,7990,8249,8620,8822,8871,8879,8988,9155,9246,9604,9486,9622,9779,10428,11561,11880,11859,12185,11675,11863,12978,13155,13082,13676,14169,14298,14996,15349,15638,15832,16020,17429,19828,20454],
+  SILVER: [89,96,93,93,100,99,95,88,86,88,92,85,89,90,99,103,93,96,87,89,89,94,98,103,102,97,96,109,109,109,111,112,113,110,116,115,111,112,120,138,151,153,155,138,141,159,157,154,156,160,162,153,156,170,181,184,205,243,257],
+  BTC: [3467557,4813675,6507676,6310030,4088027,3891489,4557750,5183873,4875342,6989294,6428337,5319007,4430489,4964484,5540012,4925250,4091192,2705066,3103425,2785170,2811424,3048933,2368041,2169712,3009478,3149604,3779598,3987163,3792091,4397975,4159102,3774683,4026381,5256500,5591733,5961862,6269113,9170140,10792036,9569960,10622342,10096447,9686116,8620933,9095437,10688597,14438361,14707594,14672003,12710027,12374921,13463700,15066900,15436001,17446478,15999985,16864269,16870246,14114830],
+  ETH: [137476,151211,212398,303131,296848,252624,277722,377347,333905,488782,523112,423246,309194,335941,399414,356876,249902,145130,223802,216084,192352,233969,178580,156913,206290,218527,241756,254729,261009,279091,264064,239522,249461,275355,304115,321830,336133,500617,552008,475446,591859,552999,484374,367390,373903,383111,554611,524639,511957,336839,273131,256403,364154,358133,557301,649540,612853,592238,467235],
+  BNB: [4636,22386,33459,68154,38769,33691,36460,51067,43124,59788,70432,58888,43066,45475,52183,49322,41278,29780,37769,38784,41238,48460,41446,32288,40618,41041,42027,46011,42735,34695,34269,31535,32039,34329,33752,44005,44243,59834,91833,91223,93391,93700,86392,77882,81481,87694,97910,110416,105145,88591,90666,85733,94766,94614,118042,126812,149139,167566,136738]
+};
 
-    const usdjpy = [104.73,106.57,110.73,109.32,109.6,111.1,109.68,109.99,111.26,114,113.01,115.07,115.08,114.95,121.69,130.84,128.7,135.76,133.23,138.95,144.75,148.74,137.97,131.2,130.14,136.18,132.82,136.3,139.33,144.32,142.25,145.53,149.34,151.7,148.26,141.04,147.24,149.92,151.34,157.72,157.28,160.89,149.88,146.17,143.59,152.08,149.77,157.2,155.2,150.62,149.91,142.96,144.04,144.03,150.71,147.86,147.86,153.99,156.18];
+const meta = {
+  NVIDIA: { label:'NVIDIA', color:'#76B900', type:'stock' },
+  GOOGLE: { label:'Google', color:'#4285F4', type:'stock' },
+  AAPL:   { label:'Apple',  color:'#999999', type:'stock' },
+  NIKKEI: { label:'日経平均', color:'#DC2626', type:'index' },
+  SP500:  { label:'S&P 500',color:'#3B82F6', type:'index' },
+  GOLD:   { label:'Gold',   color:'#D4AF37', type:'commodity' },
+  SILVER: { label:'Silver', color:'#94A3B8', type:'commodity' },
+  BTC:    { label:'Bitcoin',color:'#F7931A', type:'crypto' },
+  ETH:    { label:'Ethereum',color:'#627EEA', type:'crypto' },
+  BNB:    { label:'BNB',    color:'#F3BA2F', type:'crypto' }
+};
 
-    const rawData = {
-        'BTC': [33108,45164,58763,57720,37298,35026,41553,47130,43823,61309,56882,46219,38498,43188,45525,37650,31793,19926,23303,20043,19423,20496,17163,16537,23125,23130,28473,29252,27216,30472,29232,25937,26962,34650,37712,42272,42580,61169,71332,60666,67530,62754,64626,58978,63339,70281,96405,93557,94536,84381,82548,94184,104598,107171,115765,108226,114048,109602,90374],
-        'ETH': [1312,1418,1917,2772,2708,2273,2532,3430,3000,4287,4628,3677,2686,2922,3282,2727,1941,1069,1680,1555,1328,1572,1294,1195,1585,1604,1821,1868,1873,1933,1856,1645,1670,1815,2051,2281,2283,3339,3647,3014,3762,3437,3231,2513,2603,2519,3702,3337,3298,2236,1821,1793,2528,2486,3698,4391,4144,3848,2991],
-        'BNB': [44,210,302,623,353,303,332,464,387,524,623,511,374,395,428,377,320,219,283,279,284,325,300,246,312,301,317,337,306,240,240,216,214,226,227,312,300,399,606,578,593,582,576,532,567,576,653,702,677,587,604,599,657,656,783,857,1008,1088,875],
-        'NVIDIA': [130,137,133,150,162,200,195,224,207,256,327,294,245,244,273,185,188,152,182,151,121,135,169,146,195,232,278,277,378,423,467,494,435,408,468,495,615,791,904,864,1096,124,117,119,121,133,138,134,120,125,108,109,135,158,178,174,187,202,177],
-        'AMAZON': [162,156,155,173,161,172,166,174,166,169,175,167,150,154,163,124,120,106,135,127,113,103,97,84,103,94,103,105,121,130,134,138,127,133,146,152,175,180,180,175,181,193,187,179,195,202,220,250,236,242,222,213,201,205,208,232,255,270,279],
-        'GOOGLE': [91,101,103,118,118,122,135,145,134,148,142,145,135,135,140,114,114,109,116,108,96,95,101,88,99,90,104,107,123,120,133,136,131,124,133,140,140,138,151,163,173,182,172,163,166,171,169,189,204,170,155,159,172,176,192,213,243,281,320],
-        'S&P 500 (円)': [13641,14043,15142,15861,15975,16444,16777,17277,16951,18163,18432,19204,17837,17684,19683,18851,18669,18301,19236,19417,18548,20365,19380,18035,18524,19213,19167,19670,20875,22664,22984,23519,22940,22238,23926,24281,26026,27391,28559,28832,29510,31789,29851,29198,29562,32262,32695,34182,33955,31801,30280,28788,30919,32527,34608,34812,36175,38371,38984],
-        '日経平均': [27663,28966,29178,28812,28860,28791,27283,28089,29452,28892,27821,28791,27001,26526,27821,26847,27279,26393,27801,28091,25937,27587,27968,26094,27327,27445,28041,28856,30887,33189,33172,32619,31857,30858,33486,33464,36286,39166,40369,38405,38487,39583,39101,38647,37919,39081,38208,39894,39572,37155,35617,36045,37965,40487,41069,42718,44932,52411,50253],
-        'GOLD': [6276,6199,6066,6195,6549,6554,6450,6369,6368,6495,6728,6580,6755,6913,7464,7901,7695,7954,7699,7721,7794,7920,7944,7854,8024,7990,8249,8620,8822,8871,8879,8988,9155,9246,9604,9486,9622,9779,10428,11561,11880,11859,12185,11675,11863,12978,13155,13082,13676,14169,14298,14996,15349,15638,15832,16020,17429,19828,20454],
-        'SILVER': [88.8,96.0,93.0,93.0,100.1,99.0,94.8,88.2,86.3,87.7,92.0,84.8,88.7,89.7,99.1,102.9,93.4,95.6,86.6,89.0,89.4,93.7,98.2,103.3,101.8,96.6,96.4,109.3,108.9,108.7,111.2,112.2,113.1,110.3,115.8,114.7,110.9,112.0,120.2,137.8,151.3,153.2,154.5,137.9,141.0,158.9,156.5,154.1,156.2,160.3,162.1,153.4,156.3,169.8,180.6,183.7,204.6,243.2,256.6]
-    };
-    
-    let myChart;
-    let currentRange = 'all';
-    const jpyDatasets = {}; 
-    const performanceDatasets = {}; 
+const labels = [];
+let startY = 2021, startM = 1;
+for (let i = 0; i < 59; i++) {
+  labels.push(`${startY}/${String(startM).padStart(2,'0')}`);
+  startM++;
+  if (startM > 12) { startM = 1; startY++; }
+}
 
-    // --- 2. データ処理関数 ---
-    function processData() {
-        const initialInvestment = 1_000_000;
-        
-        for (const [id, config] of Object.entries(assetConfig)) {
-            let prices = rawData[id];
-            
-            let valueSeries = [];
-            
-            if (config.currency === 'USD') {
-                let shares = 1;
-                // 分割を考慮した100万円分の初期保有数を計算
-                if (id === 'NVIDIA') shares = (initialInvestment / (prices[0] * usdjpy[0])) / 1;
-                else if (id === 'GOOGLE') shares = (initialInvestment / (prices[0] * usdjpy[0])) / 1;
-                else shares = initialInvestment / (prices[0] * usdjpy[0]);
-                
-                valueSeries = prices.map((price, idx) => {
-                    let currentShares = shares;
-                    if (id === 'NVIDIA') {
-                        if (idx >= 41) currentShares = shares * 40;
-                        else if (idx >= 6) currentShares = shares * 4;
-                    } else if (id === 'GOOGLE') {
-                        if (idx >= 18) currentShares = shares * 20;
-                    }
-                    return price * currentShares * usdjpy[idx];
-                });
-            } else {
-                const initialPrice = prices[0];
-                const shares = initialInvestment / initialPrice;
-                valueSeries = prices.map(p => p * shares);
-            }
-            jpyDatasets[id] = valueSeries;
-        }
-    }
+let myChart = null;
+let currentPeriod = 'all';
+let activeKeys = Object.keys(db);
+let selectedAssetKey = null;
 
-    function createCheckboxes() {
-        for (const [id, config] of Object.entries(assetConfig)) {
-            const container = document.getElementById(`${config.category}-assets`);
-            const checked = config.checked ? 'checked' : '';
-            
-            const html = `
-                <div class="flex items-center">
-                    <input type="checkbox" id="cb-${id.replace(/\s|\(|\)/g, '')}" class="hidden asset-checkbox" 
-                           onchange="updateChart()" data-id="${id}" ${checked}
-                           style="--active-color: ${config.color}">
-                    <label for="cb-${id.replace(/\s|\(|\)/g, '')}" class="flex items-center cursor-pointer p-2 rounded-lg text-sm font-bold w-full border-2 border-slate-200 transition text-slate-600 hover:bg-slate-50">
-                        <div class="check-circle w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition" style="border-color: ${config.color}">
-                             <svg class="w-3 h-3 text-white transform scale-0 transition-transform" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path></svg>
-                        </div>
-                        <span>${config.name}</span>
-                    </label>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
-        }
-    }
+function init() {
+  createAssetToggles();
+  setupEventListeners();
+  renderChart();
+  updateDashboard();
+}
 
-    function initChart() {
-        const ctx = document.getElementById('chart').getContext('2d');
-        myChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: [], datasets: [] },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { 
-                        position: 'top',
-                        labels: { usePointStyle: true, padding: 20, font: { weight: 'bold' } }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        callbacks: {
-                            label: function(context) {
-                                const id = context.dataset.assetId;
-                                const valYen = context.raw;
-                                const initialVal = jpyDatasets[id][0];
-                                const performance = ((valYen / initialVal) - 1) * 100;
-                                const formattedVal = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits:0 }).format(valYen);
-                                return `${context.dataset.label}: ${formattedVal} (${performance > 0 ? '+' : ''}${performance.toFixed(1)}%)`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: { unit: 'year', displayFormats: { 'year': 'yyyy年', 'month': 'yyyy年M月'} },
-                        grid: { color: '#e2e8f0' },
-                        ticks: { color: '#475569' }
-                    },
-                    y: {
-                        grid: { color: '#e2e8f0' },
-                        ticks: {
-                            callback: function(value) { return (value / 10000).toLocaleString() + '万円'; },
-                            color: '#475569'
-                        },
-                        title: { display: true, text: '円建て評価額 (初期投資100万円)' }
-                    }
-                },
-                elements: {
-                    point: { radius: 0, hitRadius: 20 },
-                    line: { borderWidth: 2.5, tension: 0.2 }
-                }
-            }
-        });
-        updateChart();
-    }
+function createAssetToggles() {
+  const container = document.getElementById('asset-toggles');
+  Object.keys(meta).forEach(key => {
+    const m = meta[key];
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <label class="cursor-pointer group block">
+        <input type="checkbox" class="asset-checkbox hidden" value="${key}" checked>
+        <div class="flex items-center p-2 rounded-lg border border-transparent transition-all hover:bg-white hover:shadow-sm" style="color:${m.color}">
+          <span class="w-3 h-3 rounded-full mr-2" style="background-color:${m.color}"></span>
+          <span class="font-bold text-sm text-slate-700 group-hover:text-slate-900">${m.label}</span>
+        </div>
+      </label>
+    `;
+    container.appendChild(div);
+  });
+}
 
-    window.setRange = function(range, btn) {
-        currentRange = range;
-        document.querySelectorAll('.year-btn').forEach(b => {
-            b.className = 'year-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-500 hover:bg-slate-100 border';
-        });
-        btn.className = 'year-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-indigo-600 text-white shadow-md';
-        updateChart();
-    }
-
-    window.updateChart = function() {
-        const selectedIds = Array.from(document.querySelectorAll('.asset-checkbox:checked')).map(cb => cb.dataset.id);
-        
-        let start = 0, end = labels.length;
-        if (currentRange !== 'all') {
-            start = labels.findIndex(l => l.startsWith(currentRange));
-            end = labels.findLastIndex(l => l.startsWith(currentRange)) + 1;
-        }
-
-        const rangeLabels = (start === -1) ? [] : labels.slice(start, end);
-        
-        myChart.data.labels = rangeLabels;
-        myChart.data.datasets = selectedIds.map(id => {
-            const dataSlice = (start === -1) ? [] : jpyDatasets[id].slice(start, end);
-            return {
-                label: assetConfig[id].name,
-                assetId: id,
-                data: dataSlice,
-                borderColor: assetConfig[id].color,
-                backgroundColor: assetConfig[id].color + '33',
-            };
-        });
-        
-        myChart.options.scales.x.time.unit = (currentRange === 'all') ? 'year' : 'month';
-        myChart.update();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        processData();
-        createCheckboxes();
-        initChart();
+function setupEventListeners() {
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      currentPeriod = e.target.dataset.period;
+      updateDashboard();
     });
+  });
+
+  document.querySelectorAll('.asset-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => {
+      activeKeys = Array.from(document.querySelectorAll('.asset-checkbox:checked')).map(c => c.value);
+      if (selectedAssetKey && !activeKeys.includes(selectedAssetKey)) {
+        selectedAssetKey = null;
+      }
+      updateDashboard();
+    });
+  });
+
+  document.getElementById('btn-select-all').addEventListener('click', () => {
+    document.querySelectorAll('.asset-checkbox').forEach(c => c.checked = true);
+    activeKeys = Object.keys(db);
+    updateDashboard();
+  });
+  document.getElementById('btn-select-none').addEventListener('click', () => {
+    document.querySelectorAll('.asset-checkbox').forEach(c => c.checked = false);
+    activeKeys = [];
+    selectedAssetKey = null;
+    updateDashboard();
+  });
+  
+  document.getElementById('chart').addEventListener('mouseleave', () => {
+    if(!selectedAssetKey) updateDashboard(); 
+  });
+}
+
+function getStartIndex() {
+  if (currentPeriod === 'all') return 0;
+  const target = `${currentPeriod}/01`;
+  return labels.indexOf(target);
+}
+
+function updateDashboard() {
+  const startIdx = getStartIndex();
+  const slicedLabels = labels.slice(startIdx);
+  
+  const datasets = activeKeys.map(key => {
+    const rawData = db[key].slice(startIdx);
+    const baseValue = rawData[0];
+    const percentageData = rawData.map(v => baseValue ? ((v - baseValue) / baseValue) * 100 : 0);
+    
+    const isSelected = selectedAssetKey === key;
+    const isDimmed = selectedAssetKey !== null && !isSelected;
+
+    return {
+      label: meta[key].label,
+      data: percentageData,
+      rawValues: rawData,
+      borderColor: isDimmed ? '#e2e8f0' : meta[key].color,
+      backgroundColor: meta[key].color,
+      borderWidth: isSelected ? 4 : (isDimmed ? 1 : 2),
+      pointRadius: 0,
+      tension: 0.1,
+      assetKey: key,
+      order: isSelected ? -1 : (isDimmed ? 1 : 0)
+    };
+  });
+
+  myChart.data.labels = slicedLabels;
+  myChart.data.datasets = datasets;
+  myChart.update();
+
+  updateRankingAndSummary(activeKeys, startIdx);
+  document.getElementById('ranking-period-label').textContent = document.querySelector('.period-btn.active').textContent;
+}
+
+function updateRankingAndSummary(keys, startIdx) {
+  const rankingList = document.getElementById('ranking-list');
+  rankingList.innerHTML = '';
+
+  if (keys.length === 0) {
+    document.getElementById('summary-best-name').textContent = '-';
+    document.getElementById('summary-best-val').textContent = '-';
+    document.getElementById('summary-avg').textContent = '-';
+    document.getElementById('summary-worst-name').textContent = '-';
+    document.getElementById('summary-worst-val').textContent = '-';
+    return;
+  }
+
+  const performance = keys.map(key => {
+    const data = db[key];
+    const startVal = data[startIdx];
+    const endVal = data[data.length - 1];
+    const change = startVal ? ((endVal - startVal) / startVal) * 100 : 0;
+    return { key, change, endVal, label: meta[key].label, color: meta[key].color };
+  }).sort((a, b) => b.change - a.change);
+
+  performance.forEach((item, index) => {
+    const el = document.createElement('div');
+    el.className = `ranking-item p-3 rounded-lg flex items-center justify-between mb-1 ${item.key === selectedAssetKey ? 'active-highlight' : ''}`;
+    el.style.borderLeftColor = item.key === selectedAssetKey ? item.color : 'transparent';
+    el.innerHTML = `
+      <div class="flex items-center space-x-3">
+        <span class="font-black text-slate-300 w-4 text-center">${index + 1}</span>
+        <span class="font-bold text-sm text-slate-700" style="color:${item.color}">${item.label}</span>
+      </div>
+      <div class="text-right">
+        <div class="font-black text-sm ${item.change > 0 ? 'text-emerald-500' : 'text-rose-500'}">
+          ${item.change > 0 ? '+' : ''}${item.change.toFixed(1)}%
+        </div>
+        <div class="text-[10px] text-slate-400">¥${item.endVal.toLocaleString()}</div>
+      </div>
+    `;
+    el.addEventListener('click', () => toggleAssetSelection(item.key));
+    rankingList.appendChild(el);
+  });
+
+  const best = performance[0];
+  const worst = performance[performance.length - 1];
+  const avg = performance.reduce((sum, p) => sum + p.change, 0) / performance.length;
+
+  document.getElementById('summary-best-name').textContent = best.label;
+  document.getElementById('summary-best-name').style.color = best.color;
+  document.getElementById('summary-best-val').textContent = `+${best.change.toFixed(1)}%`;
+  
+  document.getElementById('summary-worst-name').textContent = worst.label;
+  document.getElementById('summary-worst-name').style.color = worst.color;
+  document.getElementById('summary-worst-val').textContent = `${worst.change.toFixed(1)}%`;
+
+  document.getElementById('summary-avg').textContent = `${avg > 0 ? '+' : ''}${avg.toFixed(1)}%`;
+}
+
+function toggleAssetSelection(key) {
+  if (selectedAssetKey === key) {
+    selectedAssetKey = null;
+  } else {
+    selectedAssetKey = key;
+  }
+  updateDashboard();
+}
+
+// --- CUSTOM PLUGIN FOR SMART LABELS ---
+const customLabelPlugin = {
+  id: 'customSmartLabels',
+  afterDatasetsDraw: (chart) => {
+    const ctx = chart.ctx;
+    const datasets = chart.data.datasets;
+    const labelPoints = [];
+
+    // 1. ラベル情報の収集
+    datasets.forEach((ds, i) => {
+      const meta = chart.getDatasetMeta(i);
+      if (meta.hidden) return;
+
+      const lastIndex = ds.data.length - 1;
+      if (ds.data[lastIndex] === null || ds.data[lastIndex] === undefined) return;
+
+      const view = meta.data[lastIndex];
+      
+      if (view) {
+        let color = ds.borderColor;
+        let bgColor = 'white';
+        if (selectedAssetKey !== null && ds.assetKey !== selectedAssetKey) {
+           color = '#cbd5e1'; 
+           bgColor = '#f8fafc';
+        }
+
+        labelPoints.push({
+          index: i,
+          x: view.x,
+          y: view.y,
+          drawY: view.y,
+          label: ds.label,
+          color: color,
+          bgColor: bgColor,
+          assetKey: ds.assetKey
+        });
+      }
+    });
+
+    // 2. Y座標でソート
+    labelPoints.sort((a, b) => a.y - b.y);
+
+    // 3. 重なり解消（下方向への押し出し）
+    const spacing = 4;
+    const labelHeight = 24; 
+
+    for (let i = 1; i < labelPoints.length; i++) {
+        const prev = labelPoints[i - 1];
+        const curr = labelPoints[i];
+        if (curr.drawY < prev.drawY + labelHeight + spacing) {
+            curr.drawY = prev.drawY + labelHeight + spacing;
+        }
+    }
+
+    // 4. はみ出し補正（下から上への押し上げ）
+    const bottomEdge = chart.chartArea.bottom;
+    const last = labelPoints[labelPoints.length - 1];
+    
+    // 一番下がはみ出ていたら
+    if (last && last.drawY + labelHeight / 2 > bottomEdge) {
+        // まず一番下をチャート下端に合わせる
+        last.drawY = bottomEdge - labelHeight / 2;
+        
+        // 下から順に重なりをチェックして上にずらす
+        for (let i = labelPoints.length - 2; i >= 0; i--) {
+            const next = labelPoints[i + 1];
+            const curr = labelPoints[i];
+            if (curr.drawY > next.drawY - labelHeight - spacing) {
+                curr.drawY = next.drawY - labelHeight - spacing;
+            }
+        }
+    }
+
+    // 5. 描画
+    ctx.save();
+    ctx.font = 'bold 12px "Inter", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    const paddingX = 8;
+    const paddingY = 4;
+    const cornerRadius = 4;
+    const labelXOffset = 20; // 少し離す
+
+    labelPoints.forEach(p => {
+      const textMetrics = ctx.measureText(p.label);
+      const textWidth = textMetrics.width;
+      const textHeight = 12;
+      
+      const boxX = chart.chartArea.right + labelXOffset;
+      const boxY = p.drawY - (textHeight + paddingY * 2) / 2;
+      const boxW = textWidth + paddingX * 2;
+      const boxH = textHeight + paddingY * 2;
+
+      // 引出線
+      ctx.beginPath();
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 1;
+      ctx.moveTo(p.x, p.y); 
+      ctx.lineTo(chart.chartArea.right + 5, p.drawY);
+      ctx.lineTo(boxX, p.drawY); // 箱まで繋げる
+      ctx.stroke();
+
+      // 背景ボックス
+      ctx.fillStyle = p.bgColor;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 1.5;
+      
+      ctx.beginPath();
+      const r = cornerRadius;
+      ctx.moveTo(boxX + r, boxY);
+      ctx.lineTo(boxX + boxW - r, boxY);
+      ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + r);
+      ctx.lineTo(boxX + boxW, boxY + boxH - r);
+      ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - r, boxY + boxH);
+      ctx.lineTo(boxX + r, boxY + boxH);
+      ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - r);
+      ctx.lineTo(boxX, boxY + r);
+      ctx.quadraticCurveTo(boxX, boxY, boxX + r, boxY);
+      ctx.closePath();
+      
+      ctx.fill();
+      ctx.stroke();
+
+      // テキスト
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.label, boxX + paddingX, p.drawY);
+    });
+
+    ctx.restore();
+  }
+};
+
+function renderChart() {
+  const ctx = document.getElementById('chart').getContext('2d');
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  
+  myChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    plugins: [customLabelPlugin],
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      hover: { mode: null }, 
+      interaction: {
+        mode: 'nearest',
+        axis: 'x',
+        intersect: false
+      },
+      onClick: (e, activeElements, chart) => {
+        if (activeElements.length > 0) {
+          const index = activeElements[0].datasetIndex;
+          const key = chart.data.datasets[index].assetKey;
+          toggleAssetSelection(key);
+        } else {
+          selectedAssetKey = null;
+          updateDashboard();
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          titleColor: '#1e293b',
+          bodyColor: '#334155',
+          borderColor: '#e2e8f0',
+          borderWidth: 1,
+          padding: 10,
+          titleFont: { weight: 'bold' },
+          itemSort: function(a, b) { return b.raw - a.raw; },
+          callbacks: {
+            label: function(context) {
+              const label = context.dataset.label || '';
+              const val = context.parsed.y;
+              const raw = context.dataset.rawValues[context.dataIndex];
+              return `${label}: ${val > 0 ? '+' : ''}${val.toFixed(1)}% (¥${raw.toLocaleString()})`;
+            }
+          }
+        },
+        datalabels: { display: false }
+      },
+      layout: {
+        padding: { right: 140 } 
+      },
+      scales: {
+        x: {
+          grid: { 
+            display: true, 
+            color: '#e2e8f0',
+            drawBorder: false
+          },
+          ticks: { 
+            maxTicksLimit: 12, 
+            color: '#64748b', 
+            font: { size: 11, weight: '500' }
+          }
+        },
+        y: {
+          grid: { color: '#f1f5f9' },
+          ticks: { 
+            callback: function(value) { return value + '%'; },
+            color: '#94a3b8'
+          }
+        }
+      }
+    }
+  });
+}
+
+init();
 </script>
 </body>
 </html>
