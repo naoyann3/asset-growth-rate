@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建てパフォーマンス（完成版）</title>
+<title>主要資産 円建てパフォーマンス（マイナス圏可視化版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -208,7 +208,9 @@ function setupEventListeners() {
     updateDashboard();
   });
   
-  // マウスが外れた際のリセット処理を削除済み
+  document.getElementById('chart').addEventListener('mouseleave', () => {
+    if(!selectedAssetKey) updateDashboard(); 
+  });
 }
 
 function getStartIndex() {
@@ -316,6 +318,42 @@ function toggleAssetSelection(key) {
   updateDashboard();
 }
 
+// --- PLUGIN: マイナス圏の背景色変更 ---
+const negativeZonePlugin = {
+  id: 'negativeZone',
+  beforeDraw: (chart) => {
+    const { ctx, chartArea, scales } = chart;
+    const yAxis = scales.y;
+    
+    // 0%ラインのピクセル位置を取得
+    const zeroPixel = yAxis.getPixelForValue(0);
+    const bottomPixel = chartArea.bottom;
+    const topPixel = chartArea.top;
+
+    // 0%ラインがチャートの描画範囲内、またはチャートの上にある場合のみ描画
+    if (zeroPixel < bottomPixel) {
+        // 描画開始位置（0%ラインか、チャートの上端か）
+        const startY = Math.max(zeroPixel, topPixel);
+        
+        ctx.save();
+        // マイナス圏の背景色（薄い赤グレー）
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.03)'; 
+        ctx.fillRect(chartArea.left, startY, chartArea.width, bottomPixel - startY);
+        
+        // 0%ラインの強調（少し濃い線）
+        if (zeroPixel >= topPixel && zeroPixel <= bottomPixel) {
+            ctx.beginPath();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#94a3b8'; // slate-400
+            ctx.moveTo(chartArea.left, zeroPixel);
+            ctx.lineTo(chartArea.right, zeroPixel);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+  }
+};
+
 // --- CUSTOM PLUGIN FOR SMART LABELS ---
 const customLabelPlugin = {
   id: 'customSmartLabels',
@@ -324,6 +362,7 @@ const customLabelPlugin = {
     const datasets = chart.data.datasets;
     const labelPoints = [];
 
+    // 1. ラベル情報の収集
     datasets.forEach((ds, i) => {
       const meta = chart.getDatasetMeta(i);
       if (meta.hidden) return;
@@ -446,7 +485,8 @@ function renderChart() {
   myChart = new Chart(ctx, {
     type: 'line',
     data: { labels: [], datasets: [] },
-    plugins: [customLabelPlugin],
+    // プラグイン登録（negativeZonePluginを追加）
+    plugins: [negativeZonePlugin, customLabelPlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
