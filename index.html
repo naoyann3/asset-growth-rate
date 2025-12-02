@@ -6,26 +6,29 @@
 <title>主要資産 円建て評価額シミュレーション</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
 <style>
   body { font-family: 'Noto Sans JP', sans-serif; background:#f3f4f6; }
   .card { background:white; border-radius:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); padding:24px; margin-bottom:24px; }
   .year-btn {
-    @apply px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all border shadow-sm bg-white text-slate-600 border-slate-300 hover:bg-slate-50;
+    @apply px-5 py-2 rounded-full font-bold text-sm transition-all border shadow-sm bg-white text-slate-600 border-slate-300 hover:bg-slate-50;
   }
   .year-btn.active {
     @apply bg-indigo-600 text-white border-indigo-600 shadow-md;
   }
   /* カスタムチェックボックス */
-  .asset-checkbox:checked + label {
+  .asset-label {
+      border: 2px solid #e2e8f0;
+      transition: all 0.2s;
+  }
+  .asset-checkbox:checked + .asset-label {
       background-color: var(--active-color);
       color: white !important;
       border-color: var(--active-color);
   }
-  .asset-checkbox:checked + label svg { transform: scale(1); }
-  .asset-checkbox:checked + label .check-circle { border-color: white; }
+  .asset-checkbox:checked + .asset-label svg { transform: scale(1); }
+  .asset-checkbox:checked + .asset-label .check-circle { border-color: white; }
 </style>
 </head>
 <body class="p-4 md:p-10 text-slate-800">
@@ -34,39 +37,30 @@
 
   <!-- ヘッダー -->
   <div class="bg-indigo-900 text-white p-8 rounded-2xl shadow-lg mb-8 text-center">
-    <h1 class="text-2xl md:text-4xl font-bold mb-2">📈 主要資産 円建て評価額推移</h1>
-    <p class="text-indigo-200 text-sm md:text-base">2021年1月に <span class="text-white font-bold text-lg">100万円</span> 投資した場合のシミュレーション</p>
+    <h1 class="text-3xl md:text-5xl font-bold mb-2">📈 主要資産 円建て評価額推移</h1>
+    <p class="text-indigo-200">2021年1月に <span class="text-white font-bold text-lg">100万円</span> 投資した場合のシミュレーション</p>
   </div>
 
   <!-- コントロールパネル -->
   <div class="card">
     <h3 class="font-bold text-sm uppercase text-slate-400 mb-4 border-b pb-2">表示アセットを選択</h3>
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-      
-      <!-- 1. 暗号資産 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
       <div>
-        <p class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1">🪙 暗号資産</p>
+        <p class="text-xs font-bold text-slate-500 mb-2">🪙 暗号資産</p>
         <div id="crypto-assets" class="space-y-2"></div>
       </div>
-      
-      <!-- 2. 米国株 -->
       <div>
-        <p class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1">📱 米国株 (GAFAM+)</p>
+        <p class="text-xs font-bold text-slate-500 mb-2">📱 米国株 (GAFAM+)</p>
         <div id="stock-assets" class="space-y-2"></div>
       </div>
-      
-      <!-- 3. 指数 -->
       <div>
-        <p class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1">📊 指数</p>
+        <p class="text-xs font-bold text-slate-500 mb-2">📊 指数</p>
         <div id="index-assets" class="space-y-2"></div>
       </div>
-      
-      <!-- 4. コモディティ -->
       <div>
-        <p class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1">💎 コモディティ</p>
+        <p class="text-xs font-bold text-slate-500 mb-2">💎 コモディティ</p>
         <div id="commodity-assets" class="space-y-2"></div>
       </div>
-
     </div>
   </div>
 
@@ -81,17 +75,17 @@
       <button class="year-btn" data-period="2025">2025</button>
     </div>
 
-    <div class="h-[400px] md:h-[600px] w-full relative">
+    <div class="h-[500px] md:h-[700px] w-full relative">
       <canvas id="chart"></canvas>
     </div>
-    <p class="text-right text-[10px] text-slate-400 mt-2">※為替レート(USD/JPY)、株式分割を考慮した円建て評価額</p>
+    <p class="text-right text-xs text-slate-400 mt-2">※為替レート(USD/JPY)、株式分割を考慮した円建て評価額</p>
   </div>
 </div>
 
 <script>
 Chart.register(ChartDataLabels);
 
-// 1. データ定義
+// --- データ定義 ---
 const labels = [];
 for(let y=2021; y<=2025; y++) for(let m=1; m<=12; m++) { if(y===2025&&m>11) break; labels.push(`${y}-${String(m).padStart(2,'0')}`); }
 
@@ -99,25 +93,20 @@ const usdJpy = [104.73,106.57,110.73,109.32,109.60,111.10,109.68,109.99,111.26,1
 
 const applePrices = [129.41,142.06,169.00,171.24,123.00,127.90,145.11,148.99,141.50,149.04,163.98,172.26,174.24,176.28,176.08,165.36,171.90,149.80,173.07,175.08,174.48,169.67,168.49,178.20,174.79,171.48,175.64,170.12,177.84,188.72,191.29,189.40,191.45,187.68,190.36,188.61,181.71,180.16,173.19,173.03,178.99,173.50,175.16,174.83,174.49,179.30,180.96,178.08,173.14,171.52,170.03,175.00,174.24,173.31,174.97,175.78,173.30,177.49,181.18,191.00];
 
-// アップル以外のデータはGrok版から継承 (昇順に並んでいる前提)
-// ※NVIDIAなどは分割前の高値で入っている場合があるので補正ロジックで対応
 const raw = {
   BTC:[33141,45247,58872,57723,37286,35041,41551,47137,43846,61322,57005,46319,38483,43193,45538,37714,31792,19986,23336,20049,19431,20496,17164,16547,23139,23145,28476,29227,27202,30477,29231,25936,26970,27814,37710,42266,42579,61189,71229,60666,67530,62754,64626,58978,63339,70281,96405,93557,94536,84381,82548,94184,104598,107171,115765,108226,114048,109602,90374],
   ETH:[1312,1418,1917,2772,2708,2273,2532,3430,3000,4287,4628,3677,2686,2922,3282,2727,1941,1069,1680,1555,1328,1572,1294,1195,1585,1604,1821,1868,1873,1933,1856,1645,1670,1815,2051,2281,2283,3339,3647,3014,3762,3437,3231,2513,2603,2519,3702,3337,3298,2236,1821,1793,2528,2486,3698,4391,4144,3848,2991],
   BNB:[44,210,302,623,353,303,332,464,387,524,623,511,374,395,428,377,320,219,283,279,284,325,300,246,312,301,317,337,306,240,240,216,214,226,227,312,300,399,606,578,593,582,576,532,567,576,653,702,677,587,604,599,657,656,783,857,1008,1088,875],
-  // NVIDIA: 元データが分割調整前(500ドル台など)のため、ロジックで株数を増やす
-  NVIDIA:[519,548,533,600,649,800,195,223,207,255,326,294,244,243,272,185,187,151,181,150,121,134,169,146,195,232,277,277,378,423,467,493,434,407,467,495,615,791,903,864,1096,123,117,119,121,132,138,134,120,124,108,108,135,157,177,174,186,202,177],
+  NVIDIA:[130,137,133,150,162,200,195,224,207,256,327,294,245,244,273,185,188,152,182,151,121,135,169,146,195,232,278,277,378,423,467,494,435,408,468,495,615,791,904,864,1096,124,117,119,121,133,138,134,120,125,108,109,135,158,178,174,187,202,177],
   AAPL: applePrices,
-  // GOOGLE: 元データが分割調整前(2000ドル台など)のため、ロジックで株数を増やす
-  GOOGLE:[1827,2021,2062,2353,2356,2441,2694,2893,2673,2960,2837,2897,2706,2701,2781,2282,2286,2179,116,108,95,94,100,88,98,90,103,107,122,119,132,136,130,124,132,139,140,138,150,162,172,182,171,163,165,171,168,189,204,170,154,158,171,176,191,212,243,281,320],
-  AMAZON:[160,155,154,173,161,172,166,173,166,168,175,166,149,153,162,124,120,106,134,126,113,103,96,84,103,94,103,105,120,130,133,138,127,133,146,151,155,176,180,175,181,193,186,178,195,202,219,250,245,232,219,223,218,206,186,173,176,166,159],
+  GOOGLE:[1827,2021,2062,2353,2356,2441,2694,2893,2673,2960,2837,2897,2706,2701,2781,2282,2286,2179,116,108,95,94,100,88,98,90,103,107,122,119,132,136,130,124,132,139,140,138,150,162,172,182,171,163,166,171,169,189,204,170,154,158,171,176,191,212,243,281,320],
+  AMAZON:[160,155,154,173,161,172,166,173,166,169,175,166,149,153,162,124,120,106,134,126,113,103,96,84,103,94,103,105,120,130,133,138,127,133,146,151,155,176,180,175,181,193,186,178,195,202,219,250,245,232,219,223,218,206,186,173,176,166,159],
   'S&P 500':[13641,14043,15142,15861,15975,16444,16777,17277,16951,18163,18432,19204,17837,17684,19683,18851,18669,18301,19236,19417,18548,20365,19380,18035,18524,19213,19167,19670,20875,22664,22984,23519,22940,22238,23926,24281,26026,27391,28559,28832,29510,31789,29851,29198,29562,32262,32695,34182,33955,31801,30280,28788,30919,32527,34608,34812,36175,38371,38984],
   '日経平均':[27663,28966,29178,28812,28860,28791,27283,28089,29452,28892,27821,28791,27001,26526,27821,26847,27279,26393,27801,28091,25937,27587,27968,26094,27327,27445,28041,28856,30887,33189,33172,32619,31857,30858,33486,33464,36286,39166,40369,38405,38487,39583,39101,38647,37919,39081,38208,39894,39572,37155,35617,36045,37965,40487,41069,42718,44932,52411,50253],
   GOLD:[6276,6199,6066,6195,6549,6554,6450,6369,6368,6495,6728,6580,6755,6913,7464,7901,7695,7954,7699,7721,7794,7920,7944,7854,8024,7990,8249,8620,8822,8871,8879,8988,9155,9246,9604,9486,9622,9779,10428,11561,11880,11859,12185,11675,11863,12978,13155,13082,13676,14169,14298,14996,15349,15638,15832,16020,17429,19828,20454],
   SILVER:[88.8,96.0,93.0,93.0,100.1,99.0,94.8,88.2,86.3,87.7,92.0,84.8,88.7,89.7,99.1,102.9,93.4,95.6,86.6,89.0,89.4,93.7,98.2,103.3,101.8,96.6,96.4,109.3,108.9,108.7,111.2,112.2,113.1,110.3,115.8,114.7,110.9,112.0,120.2,137.8,151.3,153.2,154.5,137.9,141.0,158.9,156.5,154.1,156.2,160.3,162.1,153.4,156.3,169.8,180.6,183.7,204.6,243.2,256.6]
 };
 
-// 2. アセット設定
 const assets = {
   BTC:    { name:"Bitcoin",  col:"#F7931A", cat:"crypto", curr: 'USD' },
   ETH:    { name:"Ethereum", col:"#627EEA", cat:"crypto", curr: 'USD' },
@@ -126,82 +115,69 @@ const assets = {
   AAPL:   { name:"Apple",    col:"#555555", cat:"stock",  curr: 'USD' },
   AMAZON: { name:"Amazon",   col:"#14B8A6", cat:"stock",  curr: 'USD' },
   GOOGLE: { name:"Google",   col:"#4285F4", cat:"stock",  curr: 'USD' },
-  'S&P 500':{ name:"S&P 500 (円)",col:"#3B82F6", cat:"index", curr: 'JPY' },
+  'S&P 500':{ name:"S&P 500",col:"#3B82F6", cat:"index", curr: 'JPY' },
   '日経平均':{ name:"日経平均",col:"#DC2626", cat:"index", curr: 'JPY' },
   GOLD:   { name:"Gold",     col:"#D4AF37", cat:"commodity", curr: 'JPY' },
   SILVER: { name:"Silver",   col:"#94A3B8", cat:"commodity", curr: 'JPY' }
 };
 
-// 3. データ処理 (円建て資産額への変換: 初期100万円)
+// 2. データ処理
 const jpyValues = {};
-const INITIAL_INVESTMENT = 1000000; 
+const INITIAL_INVESTMENT = 1000000;
 
 Object.keys(assets).forEach(k => {
-  let prices = raw[k] || []; // 安全策
-  let values = [];
+  let prices = [...raw[k]];
   
-  // JPY資産
-  if (assets[k].curr === 'JPY' || k === 'S&P 500' || k === 'S&P 500 (円)') {
-     const initialPrice = prices[0] || 1; // 0除算回避
-     values = prices.map(p => Math.round((p / initialPrice) * INITIAL_INVESTMENT));
-  } 
-  // USD資産（為替と分割を考慮）
-  else {
-    // 初期購入量(株数/コイン数)を計算
-    // 初月の価格(ドル) * 初月のレート = 初月の1単位円価格
-    // 100万円 / 初月円価格 = 保有数
+  if (assets[k].curr === 'JPY') {
+     const initialPrice = prices[0] || 1;
+     jpyValues[k] = prices.map(p => Math.round((p / initialPrice) * INITIAL_INVESTMENT));
+  } else {
+    // USD資産
     const initialPriceYen = (prices[0] || 1) * usdJpy[0];
     const baseUnits = INITIAL_INVESTMENT / initialPriceYen;
 
-    values = prices.map((price, i) => {
+    jpyValues[k] = prices.map((price, i) => {
       let multiplier = 1;
-      
-      // 株式分割調整 (特定の日付以降、保有数を増やす)
-      // NVIDIA: 2021-07(idx=6)で1:4, 2024-06(idx=41)で1:10 -> 計40倍
       if (k === "NVIDIA") {
         if (i >= 41) multiplier = 40;
         else if (i >= 6) multiplier = 4;
-      }
-      // GOOGLE: 2022-07(idx=18)で1:20 -> 20倍
-      else if (k === "GOOGLE") {
+      } else if (k === "GOOGLE") {
          if (i >= 18) multiplier = 20;
-      }
-      // AMAZON: 2022-06(idx=17)で1:20 -> 20倍 (念のため追加)
-      else if (k === "AMAZON") {
+      } else if (k === "AMAZON") {
          if (i >= 17) multiplier = 20;
       }
-
-      // 現在の資産額 = 現在価格(ドル) * 保有数(分割考慮) * 現在レート(円)
-      return Math.round(price * (baseUnits * multiplier) * usdJpy[i]);
+      return Math.round(price * multiplier * baseUnits * usdJpy[i]);
     });
   }
-  jpyValues[k] = values;
 });
 
-// 4. チェックボックス生成
+// 3. DOM生成 (デフォルト選択処理を修正)
+const defaultCheckedAssets = ['BTC', 'NVIDIA', 'GOLD', 'S&P 500'];
+
 Object.keys(assets).forEach(k => {
   const a = assets[k];
   const container = document.getElementById(a.cat + '-assets');
+  
+  // デフォルトでチェックを入れるかどうか
+  const isChecked = defaultCheckedAssets.includes(k) ? 'checked' : '';
+
   if (container) {
-      const defaultChecked = ['BTC', 'NVIDIA', 'GOLD', 'S&P 500'].includes(k) ? 'checked' : '';
-      
-      const html = `
+    container.innerHTML += `
       <div class="flex items-center">
         <input type="checkbox" id="cb-${k.replace(/\s/g, '')}" class="hidden asset-checkbox" 
-               onchange="updateChart()" data-key="${k}" ${defaultChecked}
+               onchange="updateChart()" data-key="${k}" ${isChecked}
                style="--active-color: ${a.col}">
-        <label for="cb-${k.replace(/\s/g, '')}" class="flex items-center cursor-pointer p-2 rounded-lg w-full border-2 border-slate-200 transition hover:bg-slate-50 text-slate-600">
+        <label for="cb-${k.replace(/\s/g, '')}" class="asset-label flex items-center cursor-pointer p-2 rounded-lg w-full transition hover:bg-slate-50 text-slate-600">
             <div class="check-circle w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition" style="border-color: ${a.col}">
                  <svg class="w-3 h-3 text-white transform scale-0 transition-transform" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path></svg>
             </div>
             <span class="font-bold">${a.name}</span>
         </label>
       </div>`;
-      container.insertAdjacentHTML('beforeend', html);
   }
 });
 
-// 5. チャートロジック
+// 4. チャート描画
 let chart, currentPeriod = 'all';
 
 function updateChart() {
@@ -213,9 +189,7 @@ function updateChart() {
   if (currentPeriod !== 'all') {
     const yearStr = currentPeriod;
     startIdx = labels.findIndex(l => l.startsWith(yearStr));
-    // その年のデータが見つからない場合のガード
     if(startIdx === -1) startIdx = 0;
-    
     const nextYearIdx = labels.findIndex(l => l.startsWith(String(Number(yearStr) + 1)));
     endIdx = (nextYearIdx === -1) ? labels.length : nextYearIdx;
   }
@@ -267,7 +241,7 @@ chart = new Chart(ctx, {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
-    layout: { padding: { right: 50 } },
+    layout: { padding: { right: 40 } },
     plugins: {
       legend: { 
           display: true, 
@@ -292,7 +266,6 @@ chart = new Chart(ctx, {
             const diff = val - 1000000;
             const sign = diff >= 0 ? '+' : '';
             const percent = ((val / 1000000 - 1) * 100).toFixed(1);
-            // 円換算表示
             const yenFmt = new Intl.NumberFormat('ja-JP').format(Math.round(val));
             return `${context.dataset.label}: ${yenFmt}円 (${sign}${percent}%)`;
           }
@@ -330,7 +303,6 @@ chart = new Chart(ctx, {
   }
 });
 
-// 初期実行
 window.onload = updateChart;
 </script>
 </body>
