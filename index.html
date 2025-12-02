@@ -2,75 +2,121 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建てパフォーマンス（マイナス圏強調版）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>主要資産 円建てパフォーマンス（スマホ最適化版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f8fafc; color: #0f172a; }
-  .card { background: white; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 24px; border: 1px solid #f1f5f9; }
+  body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f8fafc; color: #0f172a; -webkit-tap-highlight-color: transparent; }
+  .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 20px; border: 1px solid #f1f5f9; }
   
+  /* スマホでの操作性を向上 */
   .ranking-scroll::-webkit-scrollbar { width: 4px; }
   .ranking-scroll::-webkit-scrollbar-track { background: transparent; }
   .ranking-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
   .asset-checkbox:checked + div { background-color: #f1f5f9; border-color: currentColor; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
   
-  .period-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+  .period-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); touch-action: manipulation; }
   .period-btn.active { background-color: #0f172a; color: white; border-color: #0f172a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3); }
-  .period-btn:not(.active):hover { background-color: #e2e8f0; transform: translateY(-1px); }
+  
+  /* スマホでの誤タップ防止 */
+  .ranking-item { transition: transform 0.2s ease, background-color 0.2s; cursor: pointer; border-left: 4px solid transparent; active:scale(0.98); }
+  .ranking-item.active-highlight { background-color: #f1f5f9; border-left-color: currentColor; }
 
-  .ranking-item { transition: transform 0.2s ease, background-color 0.2s; cursor: pointer; border-left: 4px solid transparent; }
-  .ranking-item:hover { transform: translateX(4px); background-color: #f8fafc; }
-  .ranking-item.active-highlight { background-color: #f1f5f9; transform: translateX(6px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+  /* スマホ用アコーディオン */
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
 </style>
 </head>
-<body class="p-4 md:p-8 max-w-[1600px] mx-auto bg-slate-50">
+<body class="p-3 md:p-8 max-w-[1600px] mx-auto bg-slate-50 pb-20">
 
-  <header class="mb-8 text-center md:text-left md:flex md:justify-between md:items-end border-b border-slate-200 pb-6">
+  <!-- ヘッダー -->
+  <header class="mb-6 md:mb-10 text-center md:text-left md:flex md:justify-between md:items-end border-b border-slate-200 pb-4 md:pb-6">
     <div>
-      <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-3">
+      <h1 class="text-2xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-2">
         Market Performance
       </h1>
-      <p class="text-slate-500 font-medium flex items-center justify-center md:justify-start gap-2 text-sm md:text-base">
-        <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">JPY BASIS</span>
+      <p class="text-slate-500 font-medium flex flex-col md:flex-row items-center md:items-start justify-center md:justify-start gap-1 md:gap-2 text-xs md:text-base">
+        <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold">JPY BASIS</span>
         <span>2021.01 - 2025.11 (Stock Split Adjusted)</span>
       </p>
     </div>
-    <div class="mt-4 md:mt-0 text-right hidden md:block">
+    <div class="mt-2 md:mt-0 text-right hidden md:block">
       <div class="text-[10px] text-slate-400 font-mono tracking-widest uppercase mb-1">Last Updated</div>
       <div class="text-xl font-bold text-slate-700 font-mono">2025.12.01</div>
     </div>
   </header>
 
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-    <div class="lg:col-span-12 card flex flex-wrap gap-2 sm:gap-4 justify-center md:justify-start items-center p-4">
-      <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider hidden sm:inline-block">Timeframe</span>
-      <button class="period-btn active px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="all">All Time</button>
-      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2021">2021~</button>
-      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2022">2022~</button>
-      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2023">2023~</button>
-      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2024">2024~</button>
-      <button class="period-btn px-4 sm:px-6 py-2 rounded-full border border-slate-200 font-bold text-xs sm:text-sm" data-period="2025">2025~</button>
+  <!-- 期間選択（スマホでは横スクロールで快適に） -->
+  <div class="mb-6 overflow-x-auto pb-2 -mx-3 px-3 md:mx-0 md:px-0 md:overflow-visible">
+    <div class="flex md:flex-wrap gap-2 md:gap-4 min-w-max md:min-w-0">
+      <button class="period-btn active px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="all">All Time</button>
+      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2021">2021~</button>
+      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2022">2022~</button>
+      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2023">2023~</button>
+      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2024">2024~</button>
+      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2025">2025~</button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-    <div class="lg:col-span-1 space-y-6 order-2 lg:order-1">
-      <div class="card">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Assets</h3>
-          <div class="flex gap-2">
-            <button id="btn-select-all" class="text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded">All</button>
-            <button id="btn-select-none" class="text-[10px] font-bold text-slate-400 hover:bg-slate-100 px-2 py-1 rounded">Clear</button>
+  <!-- メインレイアウト：スマホでは縦積み、PCでは2カラム -->
+  <div class="flex flex-col lg:grid lg:grid-cols-4 gap-6">
+    
+    <!-- チャートエリア（スマホでは最上部に来るように配置） -->
+    <div class="lg:col-span-3 order-1 space-y-6">
+      <!-- チャート本体：スマホでは縦長(60vh)、PCでは固定高さ -->
+      <div class="card h-[55vh] md:h-[650px] relative p-1 md:p-6 w-full">
+        <canvas id="chart"></canvas>
+      </div>
+      
+      <!-- サマリーカード -->
+      <div class="grid grid-cols-3 gap-2 md:gap-4">
+        <div class="card bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 flex flex-col justify-center py-2 md:py-4 px-2 md:px-6 text-center md:text-left">
+          <div class="text-[8px] md:text-[10px] text-indigo-400 font-bold uppercase mb-1 tracking-wider">Top</div>
+          <div class="flex flex-col md:flex-row items-center md:items-baseline gap-0 md:gap-2">
+            <div class="text-sm md:text-2xl font-black text-indigo-900 truncate w-full" id="summary-best-name">-</div>
+            <div class="text-[10px] md:text-sm font-bold text-indigo-600" id="summary-best-val">-</div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-2" id="asset-toggles"></div>
+        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-2 md:py-4 px-2 md:px-6 text-center md:text-left">
+          <div class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Avg</div>
+          <div class="text-sm md:text-2xl font-black text-slate-700" id="summary-avg">-</div>
+        </div>
+        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-2 md:py-4 px-2 md:px-6 text-center md:text-left">
+          <div class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Worst</div>
+          <div class="flex flex-col md:flex-row items-center md:items-baseline gap-0 md:gap-2">
+             <div class="text-sm md:text-2xl font-black text-slate-700 truncate w-full" id="summary-worst-name">-</div>
+             <div class="text-[10px] md:text-sm font-bold text-slate-500" id="summary-worst-val">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- サイドバーエリア（スマホではチャートの下に配置） -->
+    <div class="lg:col-span-1 space-y-6 order-2">
+      
+      <!-- 資産選択（スマホではアコーディオンで開閉可能にしてスッキリさせる） -->
+      <div class="card p-0 overflow-hidden">
+        <details class="group" open>
+          <summary class="flex justify-between items-center p-4 md:p-6 bg-white cursor-pointer hover:bg-slate-50 transition">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Assets Setting</h3>
+            <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div class="px-4 pb-4 md:px-6 md:pb-6 border-t border-slate-100 pt-4">
+            <div class="flex justify-end gap-2 mb-3">
+              <button id="btn-select-all" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">Select All</button>
+              <button id="btn-select-none" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">Clear</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2" id="asset-toggles"></div>
+          </div>
+        </details>
       </div>
 
-      <div class="card h-[500px] lg:h-[calc(100vh-450px)] min-h-[400px] flex flex-col">
+      <!-- ランキング -->
+      <div class="card h-[400px] lg:h-[calc(100vh-450px)] min-h-[300px] flex flex-col">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex justify-between items-center">
           <span>Ranking</span>
           <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500" id="ranking-period-label">All Time</span>
@@ -79,37 +125,11 @@
       </div>
     </div>
 
-    <div class="lg:col-span-3 order-1 lg:order-2 space-y-6">
-      <div class="card h-[400px] sm:h-[500px] md:h-[650px] relative p-2 sm:p-6">
-        <canvas id="chart"></canvas>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="card bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 flex flex-col justify-center py-4">
-          <div class="text-[10px] text-indigo-400 font-bold uppercase mb-1 tracking-wider">Top Performer</div>
-          <div class="flex items-baseline gap-2">
-            <div class="text-xl md:text-2xl font-black text-indigo-900 truncate" id="summary-best-name">-</div>
-            <div class="text-sm font-bold text-indigo-600" id="summary-best-val">-</div>
-          </div>
-        </div>
-        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-4">
-          <div class="text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Selection Average</div>
-          <div class="text-xl md:text-2xl font-black text-slate-700" id="summary-avg">-</div>
-        </div>
-        <div class="card bg-white border border-slate-100 flex flex-col justify-center py-4">
-          <div class="text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Worst Performer</div>
-          <div class="flex items-baseline gap-2">
-             <div class="text-xl md:text-2xl font-black text-slate-700 truncate" id="summary-worst-name">-</div>
-             <div class="text-sm font-bold text-slate-500" id="summary-worst-val">-</div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
 <script>
 // =========================================================
-//  DATA DEFINITIONS (2021/01 - 2025/11) : JPY Converted
+//  DATA DEFINITIONS (2021/01 - 2025/11)
 // =========================================================
 
 const db = {
@@ -208,9 +228,10 @@ function setupEventListeners() {
     updateDashboard();
   });
   
-  document.getElementById('chart').addEventListener('mouseleave', () => {
-    if(!selectedAssetKey) updateDashboard(); 
-  });
+  // スマホ対応：アコーディオンを自動で閉じる処理（オプション）
+  if (window.innerWidth < 768) {
+    document.querySelector('details').removeAttribute('open');
+  }
 }
 
 function getStartIndex() {
@@ -318,7 +339,7 @@ function toggleAssetSelection(key) {
   updateDashboard();
 }
 
-// --- PLUGIN: マイナス圏の背景色強調 ---
+// --- PLUGIN: マイナス圏の背景色強調 (Darker) ---
 const negativeZonePlugin = {
   id: 'negativeZone',
   beforeDraw: (chart) => {
@@ -333,15 +354,13 @@ const negativeZonePlugin = {
         const startY = Math.max(zeroPixel, topPixel);
         
         ctx.save();
-        // 修正点: 少し濃いめの赤グレーに変更
         ctx.fillStyle = 'rgba(220, 38, 38, 0.15)'; 
         ctx.fillRect(chartArea.left, startY, chartArea.width, bottomPixel - startY);
         
-        // 0%ラインの強調
         if (zeroPixel >= topPixel && zeroPixel <= bottomPixel) {
             ctx.beginPath();
             ctx.lineWidth = 1.5;
-            ctx.strokeStyle = '#94a3b8';
+            ctx.strokeStyle = '#64748b'; 
             ctx.moveTo(chartArea.left, zeroPixel);
             ctx.lineTo(chartArea.right, zeroPixel);
             ctx.stroke();
@@ -355,6 +374,9 @@ const negativeZonePlugin = {
 const customLabelPlugin = {
   id: 'customSmartLabels',
   afterDatasetsDraw: (chart) => {
+    // スマホ判定：画面幅が小さいときはラベルを描画しない
+    if (window.innerWidth < 768) return;
+
     const ctx = chart.ctx;
     const datasets = chart.data.datasets;
     const labelPoints = [];
@@ -525,7 +547,8 @@ function renderChart() {
         datalabels: { display: false }
       },
       layout: {
-        padding: { right: 140 } 
+        // スマホの場合は右側の余白をなくす（名札がないため）
+        padding: { right: window.innerWidth < 768 ? 20 : 140 } 
       },
       scales: {
         x: {
@@ -535,7 +558,7 @@ function renderChart() {
             drawBorder: false
           },
           ticks: { 
-            maxTicksLimit: 12, 
+            maxTicksLimit: window.innerWidth < 768 ? 6 : 12, // スマホでは目盛りを減らす
             color: '#64748b', 
             font: { size: 11, weight: '500' }
           }
