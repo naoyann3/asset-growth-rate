@@ -2,292 +2,294 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建て評価額シミュレーション</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>主要資産 円建てパフォーマンス・トラッカー (2021年〜)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Noto Sans JP', sans-serif; background:#f3f4f6; }
-  .card { background:white; border-radius:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); padding:24px; margin-bottom:24px; }
-  .year-btn {
-    @apply px-5 py-2 rounded-full font-bold text-sm transition-all border shadow-sm bg-white text-slate-600 border-slate-300 hover:bg-slate-50;
-  }
-  .year-btn.active {
-    @apply bg-indigo-600 text-white border-indigo-600 shadow-md;
-  }
+    body { font-family: 'Noto Sans JP', sans-serif; background-color: #f1f5f9; }
+    .mono { font-family: 'Roboto Mono', monospace; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+    
+    /* チェックボックスのカスタムスタイル */
+    .asset-checkbox:checked + label {
+        background-color: var(--active-color);
+        color: white !important;
+        border-color: var(--active-color);
+    }
+    .asset-checkbox:checked + label svg { transform: scale(1); }
+    .asset-checkbox:checked + label .check-circle { border-color: white; }
 </style>
 </head>
-<body class="p-4 md:p-10 text-slate-800">
+<body class="p-3 md:p-8 text-slate-800">
 
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto space-y-6">
 
-  <!-- ヘッダー -->
-  <div class="bg-indigo-900 text-white p-8 rounded-2xl shadow-lg mb-8 text-center">
-    <h1 class="text-3xl md:text-5xl font-bold mb-2">📈 主要資産 円建て評価額推移</h1>
-    <p class="text-indigo-200">2021年1月に <span class="text-white font-bold text-lg">100万円</span> 投資した場合の資産価値シミュレーション</p>
-  </div>
-
-  <!-- コントロールパネル -->
-  <div class="card">
-    <h3 class="font-bold text-sm uppercase text-slate-400 mb-4 border-b pb-2">表示アセットを選択</h3>
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-      <div>
-        <p class="text-xs font-bold text-slate-500 mb-2">🪙 暗号資産</p>
-        <div id="crypto-assets" class="space-y-2"></div>
-      </div>
-      <div>
-        <p class="text-xs font-bold text-slate-500 mb-2">📱 米国株 (GAFAM+)</p>
-        <div id="stock-assets" class="space-y-2"></div>
-      </div>
-      <div>
-        <p class="text-xs font-bold text-slate-500 mb-2">📊 指数</p>
-        <div id="index-assets" class="space-y-2"></div>
-      </div>
-      <div>
-        <p class="text-xs font-bold text-slate-500 mb-2">💎 コモディティ</p>
-        <div id="commodity-assets" class="space-y-2"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- チャートエリア -->
-  <div class="card">
-    <div class="flex flex-wrap gap-2 justify-center mb-6">
-      <button class="year-btn active" data-period="all">全期間</button>
-      <button class="year-btn" data-period="2021">2021</button>
-      <button class="year-btn" data-period="2022">2022</button>
-      <button class="year-btn" data-period="2023">2023</button>
-      <button class="year-btn" data-period="2024">2024</button>
-      <button class="year-btn" data-period="2025">2025</button>
+    <!-- ヘッダー -->
+    <div class="bg-slate-800 text-white p-6 rounded-2xl shadow-lg">
+        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
+            📈 主要資産 円建てパフォーマンス・トラッカー
+        </h1>
+        <p class="text-xs text-slate-400 mt-1">2021年1月に100万円を投資した場合の資産推移</p>
     </div>
 
-    <div class="h-[500px] md:h-[700px] w-full relative">
-      <canvas id="chart"></canvas>
+    <!-- アセット選択エリア -->
+    <div class="card p-5">
+        <h3 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4 border-b pb-2">表示アセットを選択</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- 暗号資産 -->
+            <div>
+                <p class="font-bold text-slate-700 mb-3 text-sm">🪙 暗号資産</p>
+                <div class="space-y-2" id="crypto-assets"></div>
+            </div>
+            <!-- 株式・指数 -->
+            <div>
+                <p class="font-bold text-slate-700 mb-3 text-sm">💹 株式・指数</p>
+                <div class="space-y-2" id="stock-assets"></div>
+            </div>
+            <!-- コモディティ -->
+            <div>
+                <p class="font-bold text-slate-700 mb-3 text-sm">💎 コモディティ</p>
+                <div class="space-y-2" id="commodity-assets"></div>
+            </div>
+        </div>
     </div>
-    <p class="text-right text-xs text-slate-400 mt-2">※為替レート、株式分割を考慮した円建て評価額</p>
-  </div>
+    
+    <!-- メインチャートエリア -->
+    <div class="card p-4 md:p-6">
+        <!-- 期間フィルターボタン -->
+        <div class="flex flex-wrap gap-2 mb-4 border-b pb-4 justify-center md:justify-start">
+            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-slate-700 text-white shadow-inner" data-year="all" onclick="setRange('all', this)">全期間</button>
+            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2021', this)">2021年</button>
+            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2022', this)">2022年</button>
+            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2023', this)">2023年</button>
+            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2024', this)">2024年</button>
+            <button class="year-filter-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-600 hover:bg-slate-100 border" onclick="setRange('2025', this)">2025年</button>
+        </div>
+        <div class="h-[500px] w-full relative">
+            <canvas id="chart"></canvas>
+        </div>
+        <p class="text-[10px] text-slate-400 text-right mt-4">※2021年1月に100万円を投資した際の円建て評価額の推移 (株式分割・為替変動を考慮)</p>
+    </div>
+
+    <!-- 解説エリア -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="card p-5 border-t-4 border-purple-400">
+            <h3 class="font-bold text-lg text-purple-700 mb-2">2021年 : 金融緩和バブル</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+                コロナ禍の金融緩和を背景に、ほぼ全ての資産が上昇。特に暗号資産は凄まじい伸びを見せ、**BTCは年初来2倍以上**に。NVIDIAも頭角を現し始める。
+            </p>
+        </div>
+        <div class="card p-5 border-t-4 border-slate-400">
+            <h3 class="font-bold text-lg text-slate-700 mb-2">2022年 : 冬の時代</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+                FRBの急激な利上げにより、リスク資産が暴落。ハイテク株や暗号資産は軒並み**年初来-50%を下回る**大ダメージ。一方、安全資産のGOLDは底堅く推移。
+            </p>
+        </div>
+        <div class="card p-5 border-t-4 border-emerald-400">
+            <h3 class="font-bold text-lg text-emerald-700 mb-2">2023年〜 : AI革命と回復</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+                NVIDIAがAIブームを牽引し、株価は**驚異的な上昇**を記録。BTCも現物ETF承認期待で回復基調に。GOLDは地政学リスクの高まりから史上最高値を更新し続ける。
+            </p>
+        </div>
+    </div>
 </div>
 
 <script>
-Chart.register(ChartDataLabels);
-
-// 1. データ定義
-const labels = [];
-for(let y=2021; y<=2025; y++) for(let m=1; m<=12; m++) { if(y===2025&&m>11) break; labels.push(`${y}-${String(m).padStart(2,'0')}`); }
-
-const usdJpy = [104.73,106.57,110.73,109.32,109.60,111.10,109.68,109.99,111.26,114.00,113.01,115.07,115.08,114.95,121.69,130.84,128.70,135.76,133.23,138.95,144.75,148.74,137.97,131.20,130.14,136.18,132.82,136.30,139.33,144.32,142.25,145.53,149.34,151.70,148.26,141.04,147.24,149.92,151.34,157.72,157.28,160.89,149.88,146.17,143.59,152.08,149.77,157.20,155.20,150.62,149.91,142.96,144.04,144.03,150.71,147.86,147.86,153.99,156.18];
-
-// Appleのデータ補完 (Grok版で定義されていたものを使用)
-const applePrices = [129.41,142.06,169.00,171.24,123.00,127.90,145.11,148.99,141.50,149.04,163.98,172.26,174.24,176.28,176.08,165.36,171.90,149.80,173.07,175.08,174.48,169.67,168.49,178.20,174.79,171.48,175.64,170.12,177.84,188.72,191.29,189.40,191.45,187.68,190.36,188.61,181.71,180.16,173.19,173.03,178.99,173.50,175.16,174.83,174.49,179.30,180.96,178.08,173.14,171.52,170.03,175.00,174.24,173.31,174.97,175.78,173.30,177.49,181.18,191.00];
-
-const raw = {
-  BTC:[33141,45247,58872,57723,37286,35041,41551,47137,43846,61322,57005,46319,38483,43193,45538,37714,31792,19986,23336,20049,19431,20496,17164,16547,23139,23145,28476,29227,27202,30477,29231,25936,26970,27814,37710,42266,42579,61189,71229,60666,67530,62754,64626,58978,63339,70281,96405,93557,94536,84381,82548,94184,104598,107171,115765,108226,114048,109602,90374],
-  ETH:[1312,1418,1917,2772,2708,2273,2532,3430,3000,4287,4628,3677,2686,2922,3282,2727,1941,1069,1680,1555,1328,1572,1294,1195,1585,1604,1821,1868,1873,1933,1856,1645,1670,1815,2051,2281,2283,3339,3647,3014,3762,3437,3231,2513,2603,2519,3702,3337,3298,2236,1821,1793,2528,2486,3698,4391,4144,3848,2991],
-  BNB:[44,210,302,623,353,303,332,464,387,524,623,511,374,395,428,377,320,219,283,279,284,325,300,246,312,301,317,337,306,240,240,216,214,226,227,312,300,399,606,578,593,582,576,532,567,576,653,702,677,587,604,599,657,656,783,857,1008,1088,875],
-  NVIDIA:[130,137,133,150,162,200,195,224,207,256,327,294,245,244,273,185,188,152,182,151,121,135,169,146,195,232,278,277,378,423,467,494,435,408,468,495,615,791,904,864,1096,124,117,119,121,133,138,134,120,125,108,109,135,158,178,174,187,202,177],
-  AAPL: applePrices, // 定義済み配列を使用
-  GOOGLE:[1827,2021,2062,2353,2356,2441,2694,2893,2673,2960,2837,2897,2706,2701,2781,2282,2286,2179,116.32,108.22,95.65,94.51,100.99,88.23,98.84,90.06,103.73,107.34,122.87,119.70,132.72,136.17,130.86,124.08,132.53,139.69,140.10,138.46,150.93,162.78,172.50,182.15,171.54,163.38,165.85,171.11,168.95,189.30,204.02,170.28,154.64,158.80,171.74,176.23,191.90,212.91,243.10,281.19,320.18],
-  AMAZON:[162,156,155,173,161,172,166,174,166,169,175,167,150,154,163,124,120,106,135,127,113,103,97,84,103,94,103,105,121,130,134,138,127,133,146,152,175,180,180,175,181,193,187,179,195,202,220,250,236,242,222,213,201,205,208,232,255,270,279],
-  'S&P 500':[13641,14043,15142,15861,15975,16444,16777,17277,16951,18163,18432,19204,17837,17684,19683,18851,18669,18301,19236,19417,18548,20365,19380,18035,18524,19213,19167,19670,20875,22664,22984,23519,22940,22238,23926,24281,26026,27391,28559,28832,29510,31789,29851,29198,29562,32262,32695,34182,33955,31801,30280,28788,30919,32527,34608,34812,36175,38371,38984],
-  '日経平均':[27663,28966,29178,28812,28860,28791,27283,28089,29452,28892,27821,28791,27001,26526,27821,26847,27279,26393,27801,28091,25937,27587,27968,26094,27327,27445,28041,28856,30887,33189,33172,32619,31857,30858,33486,33464,36286,39166,40369,38405,38487,39583,39101,38647,37919,39081,38208,39894,39572,37155,35617,36045,37965,40487,41069,42718,44932,52411,50253],
-  GOLD:[6276,6199,6066,6195,6549,6554,6450,6369,6368,6495,6728,6580,6755,6913,7464,7901,7695,7954,7699,7721,7794,7920,7944,7854,8024,7990,8249,8620,8822,8871,8879,8988,9155,9246,9604,9486,9622,9779,10428,11561,11880,11859,12185,11675,11863,12978,13155,13082,13676,14169,14298,14996,15349,15638,15832,16020,17429,19828,20454],
-  SILVER:[88.8,96.0,93.0,93.0,100.1,99.0,94.8,88.2,86.3,87.7,92.0,84.8,88.7,89.7,99.1,102.9,93.4,95.6,86.6,89.0,89.4,93.7,98.2,103.3,101.8,96.6,96.4,109.3,108.9,108.7,111.2,112.2,113.1,110.3,115.8,114.7,110.9,112.0,120.2,137.8,151.3,153.2,154.5,137.9,141.0,158.9,156.5,154.1,156.2,160.3,162.1,153.4,156.3,169.8,180.6,183.7,204.6,243.2,256.6]
-};
-
-// 銘柄設定 (idはrawデータのキーと一致させる)
-const assets = {
-  BTC:    { name:"Bitcoin",  col:"#F7931A", cat:"crypto" },
-  ETH:    { name:"Ethereum", col:"#627EEA", cat:"crypto" },
-  BNB:    { name:"BNB",      col:"#F3BA2F", cat:"crypto" },
-  NVIDIA: { name:"NVIDIA",   col:"#76B900", cat:"stock" },
-  AAPL:   { name:"Apple",    col:"#555555", cat:"stock" },
-  AMAZON: { name:"Amazon",   col:"#14B8A6", cat:"stock" },
-  GOOGLE: { name:"Google",   col:"#4285F4", cat:"stock" },
-  'S&P 500':{ name:"S&P 500",col:"#3B82F6", cat:"index" },
-  '日経平均':{ name:"日経平均",col:"#DC2626", cat:"index" },
-  GOLD:   { name:"Gold",     col:"#D4AF37", cat:"commodity" },
-  SILVER: { name:"Silver",   col:"#94A3B8", cat:"commodity" }
-};
-
-// 2. データ処理 (円建て資産額への変換: 初期100万円)
-const jpyValues = {};
-const INITIAL_INVESTMENT = 1000000; // 100万円
-
-Object.keys(assets).forEach(k => {
-  let prices = [...raw[k]];
-
-  // 株式分割の調整 (価格の連続性を補正するのではなく、保有口数を増やす考え方)
-  // NVIDIA: 2021/07(idx=6)で1:4, 2024/06(idx=41)で1:10
-  // Google: 2022/07(idx=18)で1:20
-  // ※提供データが既に分割調整後の値の場合は不要だが、ここでは分割タイミングで価格が落ちていると仮定して補正
-  
-  let values = [];
-  
-  if (['S&P 500', '日経平均', 'GOLD', 'SILVER'].includes(k)) {
-    // 既に円建てのデータ、または指数
-    const initialPrice = prices[0];
-    values = prices.map(p => Math.round((p / initialPrice) * INITIAL_INVESTMENT));
-  } else {
-    // ドル建て資産 -> 円換算
-    // まずドル建てでの初期購入量を計算
-    let initialUsdPrice = prices[0];
-    
-    // 分割前の価格に戻して計算しないと初期投資額が合わないため、分割ロジックを適用
-    // ただし、ここでは簡易的に「初月の価格で購入した口数」をベースに、毎月の評価額を計算する
-    
-    values = prices.map((price, i) => {
-      let multiplier = 1;
-      
-      if (k === "NVIDIA") {
-        // データ上の価格が分割で下がっている場合、保有数を増やす
-        if (i >= 41) multiplier = 40; // 1:10 * 1:4
-        else if (i >= 6) multiplier = 4; // 1:4
-      }
-      if (k === "GOOGLE") {
-         if (i >= 18) multiplier = 20;
-      }
-
-      // 2021年1月時点での購入口数
-      // 初月の価格(分割前であるべき)に対して100万円(約9500ドル)分買う
-      // 初月の価格は分割調整されていない前提
-      // しかし提供データを見るとNVIDIAの初月は519ドル、分割後(7月)は19ドルとなっているため、
-      // 初月の価格は分割前の高い価格。
-      
-      // 資産額 = (現在の価格 * 保有口数 * 分割倍率) * ドル円レート
-      // 基準: 初月(i=0)の資産額 = 1,000,000円
-      
-      const initialPriceYen = prices[0] * usdJpy[0]; // 初月の1単位あたりの円価格
-      const units = INITIAL_INVESTMENT / initialPriceYen; // 購入単位数
-      
-      return Math.round(price * multiplier * units * usdJpy[i]);
-    });
-  }
-  jpyValues[k] = values;
-});
-
-
-// 3. DOM生成
-Object.keys(assets).forEach(k => {
-  const a = assets[k];
-  const container = document.getElementById(a.cat + '-assets');
-  if (container) {
-    container.innerHTML += `
-      <label class="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-slate-50 transition text-sm">
-        <input type="checkbox" checked data-key="${k}" class="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" style="accent-color:${a.col}">
-        <span class="font-bold text-slate-700">${a.name}</span>
-      </label>`;
-  }
-});
-
-// 4. チャート描画
-let chart, currentPeriod = 'all';
-
-function updateChart() {
-  const checked = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.dataset.key);
-  
-  // 期間フィルタリング
-  let startIdx = 0;
-  let endIdx = labels.length;
-  
-  if (currentPeriod !== 'all') {
-    const yearStr = currentPeriod;
-    startIdx = labels.findIndex(l => l.startsWith(yearStr));
-    endIdx = labels.findLastIndex(l => l.startsWith(yearStr)) + 1;
-  }
-
-  const subLabels = labels.slice(startIdx, endIdx);
-
-  chart.data.labels = subLabels;
-  chart.data.datasets = checked.map(key => {
-    const dataSlice = jpyValues[key].slice(startIdx, endIdx);
-    return {
-      label: assets[key].name,
-      data: dataSlice,
-      borderColor: assets[key].col,
-      backgroundColor: assets[key].col + '33', // 透明度追加
-      borderWidth: 2,
-      pointRadius: 0,
-      pointHitRadius: 10,
-      tension: 0.3
+    const assetConfig = {
+        'BTC': { name: 'Bitcoin', category: 'crypto', color: '#F7931A' },
+        'ETH': { name: 'Ethereum', category: 'crypto', color: '#627EEA' },
+        'BNB': { name: 'BNB', category: 'crypto', color: '#1e1e1e' },
+        'S&P 500 (円)': { name: 'S&P 500 (円建)', category: 'stock', color: '#3B82F6', checked: true },
+        '日経平均': { name: '日経平均', category: 'stock', color: '#DC2626' },
+        'NVIDIA': { name: 'NVIDIA', category: 'stock', color: '#76B900', checked: true },
+        'AMAZON': { name: 'Amazon', category: 'stock', color: '#14B8A6' },
+        'GOOGLE': { name: 'Google', category: 'stock', color: '#8B5CF6' },
+        'GOLD': { name: 'Gold', category: 'commodity', color: '#D4AF37', checked: true },
+        'SILVER': { name: 'Silver', category: 'commodity', color: '#A8A8A8' }
     };
-  });
-  
-  chart.update();
-}
 
-// 期間ボタンイベント
-document.querySelectorAll('.year-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-    currentPeriod = this.dataset.period;
-    updateChart();
-  });
-});
-
-document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', updateChart));
-
-const ctx = document.getElementById('chart').getContext('2d');
-chart = new Chart(ctx, {
-  type: 'line',
-  data: { labels: [], datasets: [] },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { 
-          display: true, // 凡例を表示
-          position: 'top',
-          labels: { usePointStyle: true, padding: 20, font: { weight: 'bold' } }
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            const val = context.raw;
-            const diff = val - 1000000;
-            const sign = diff >= 0 ? '+' : '';
-            const percent = ((val / 1000000 - 1) * 100).toFixed(1);
-            return `${context.dataset.label}: ${Math.round(val).toLocaleString()}円 (${sign}${percent}%)`;
-          }
+    const labels = [];
+    for (let y = 2021; y <= 2025; y++) {
+        for (let m = 1; m <= 12; m++) {
+            if (y === 2025 && m > 11) break;
+            labels.push(`${y}-${String(m).padStart(2, '0')}`);
         }
-      },
-      datalabels: {
-        align: 'right',
-        anchor: 'end',
-        color: c => c.dataset.borderColor,
-        font: { weight: 'bold', size: 11 },
-        formatter: (v, c) => {
-             return c.dataIndex === c.dataset.data.length - 1 ? c.dataset.label : null;
-        },
-        display: 'auto'
-      }
-    },
-    layout: { padding: { right: 50 } }, // ラベル表示用スペース
-    scales: {
-      x: { grid: { color: '#e2e8f0' }, ticks: { maxRotation: 0, autoSkip: true } },
-      y: {
-        grid: { color: '#e2e8f0' },
-        title: { display: true, text: '評価額 (円)', font: { weight: 'bold' } },
-        ticks: { 
-            callback: v => (v/10000).toLocaleString() + '万円' 
-        }
-      }
     }
-  }
-});
 
-// 初期実行
-window.onload = () => {
-    // デフォルト選択（不要なものは外す）
-    const defaultIds = ['BTC', 'NVIDIA', 'GOLD', 'S&P 500'];
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.checked = defaultIds.includes(cb.dataset.key);
+    const usdjpy = [104.73,106.57,110.73,109.32,109.6,111.1,109.68,109.99,111.26,114,113.01,115.07,115.08,114.95,121.69,130.84,128.7,135.76,133.23,138.95,144.75,148.74,137.97,131.2,130.14,136.18,132.82,136.3,139.33,144.32,142.25,145.53,149.34,151.7,148.26,141.04,147.24,149.92,151.34,157.72,157.28,160.89,149.88,146.17,143.59,152.08,149.77,157.2,155.2,150.62,149.91,142.96,144.04,144.03,150.71,147.86,147.86,153.99,156.18];
+
+    const rawData = {
+        'BTC': [33108,45164,58763,57720,37298,35026,41553,47130,43823,61309,56882,46219,38498,43188,45525,37650,31793,19926,23303,20043,19423,20496,17163,16537,23125,23130,28473,29252,27216,30472,29232,25937,26962,34650,37712,42272,42580,61169,71332,60666,67530,62754,64626,58978,63339,70281,96405,93557,94536,84381,82548,94184,104598,107171,115765,108226,114048,109602,90374],
+        'ETH': [1312,1418,1917,2772,2708,2273,2532,3430,3000,4287,4628,3677,2686,2922,3282,2727,1941,1069,1680,1555,1328,1572,1294,1195,1585,1604,1821,1868,1873,1933,1856,1645,1670,1815,2051,2281,2283,3339,3647,3014,3762,3437,3231,2513,2603,2519,3702,3337,3298,2236,1821,1793,2528,2486,3698,4391,4144,3848,2991],
+        'BNB': [44,210,302,623,353,303,332,464,387,524,623,511,374,395,428,377,320,219,283,279,284,325,300,246,312,301,317,337,306,240,240,216,214,226,227,312,300,399,606,578,593,582,576,532,567,576,653,702,677,587,604,599,657,656,783,857,1008,1088,875],
+        'NVIDIA': [130,137,133,150,162,200,195,224,207,256,327,294,245,244,273,185,188,152,182,151,121,135,169,146,195,232,278,277,378,423,467,494,435,408,468,495,615,791,904,864,1096,124,117,119,121,133,138,134,120,125,108,109,135,158,178,174,187,202,177],
+        'AMAZON': [162,156,155,173,161,172,166,174,166,169,175,167,150,154,163,124,120,106,135,127,113,103,97,84,103,94,103,105,121,130,134,138,127,133,146,152,175,180,180,175,181,193,187,179,195,202,220,250,236,242,222,213,201,205,208,232,255,270,279],
+        'GOOGLE': [91,101,103,118,118,122,135,145,134,148,142,145,135,135,140,114,114,109,116,108,96,95,101,88,99,90,104,107,123,120,133,136,131,124,133,140,140,138,151,163,173,182,172,163,166,171,169,189,204,170,155,159,172,176,192,213,243,281,320],
+        'S&P 500 (円)': [13641,14043,15142,15861,15975,16444,16777,17277,16951,18163,18432,19204,17837,17684,19683,18851,18669,18301,19236,19417,18548,20365,19380,18035,18524,19213,19167,19670,20875,22664,22984,23519,22940,22238,23926,24281,26026,27391,28559,28832,29510,31789,29851,29198,29562,32262,32695,34182,33955,31801,30280,28788,30919,32527,34608,34812,36175,38371,38984],
+        '日経平均': [27663,28966,29178,28812,28860,28791,27283,28089,29452,28892,27821,28791,27001,26526,27821,26847,27279,26393,27801,28091,25937,27587,27968,26094,27327,27445,28041,28856,30887,33189,33172,32619,31857,30858,33486,33464,36286,39166,40369,38405,38487,39583,39101,38647,37919,39081,38208,39894,39572,37155,35617,36045,37965,40487,41069,42718,44932,52411,50253],
+        'GOLD': [6276,6199,6066,6195,6549,6554,6450,6369,6368,6495,6728,6580,6755,6913,7464,7901,7695,7954,7699,7721,7794,7920,7944,7854,8024,7990,8249,8620,8822,8871,8879,8988,9155,9246,9604,9486,9622,9779,10428,11561,11880,11859,12185,11675,11863,12978,13155,13082,13676,14169,14298,14996,15349,15638,15832,16020,17429,19828,20454],
+        'SILVER': [88.8,96.0,93.0,93.0,100.1,99.0,94.8,88.2,86.3,87.7,92.0,84.8,88.7,89.7,99.1,102.9,93.4,95.6,86.6,89.0,89.4,93.7,98.2,103.3,101.8,96.6,96.4,109.3,108.9,108.7,111.2,112.2,113.1,110.3,115.8,114.7,110.9,112.0,120.2,137.8,151.3,153.2,154.5,137.9,141.0,158.9,156.5,154.1,156.2,160.3,162.1,153.4,156.3,169.8,180.6,183.7,204.6,243.2,256.6]
+    };
+    
+    let myChart;
+    let currentRange = 'all';
+    const jpyDatasets = {}; 
+    const performanceDatasets = {}; 
+
+    // --- 2. データ処理関数 ---
+    function processData() {
+        const initialInvestment = 1_000_000;
+        
+        for (const [id, config] of Object.entries(assetConfig)) {
+            let prices = rawData[id];
+            
+            let valueSeries = [];
+            
+            if (config.currency === 'USD') {
+                let shares = 1;
+                // 分割を考慮した100万円分の初期保有数を計算
+                if (id === 'NVIDIA') shares = (initialInvestment / (prices[0] * usdjpy[0])) / 1;
+                else if (id === 'GOOGLE') shares = (initialInvestment / (prices[0] * usdjpy[0])) / 1;
+                else shares = initialInvestment / (prices[0] * usdjpy[0]);
+                
+                valueSeries = prices.map((price, idx) => {
+                    let currentShares = shares;
+                    if (id === 'NVIDIA') {
+                        if (idx >= 41) currentShares = shares * 40;
+                        else if (idx >= 6) currentShares = shares * 4;
+                    } else if (id === 'GOOGLE') {
+                        if (idx >= 18) currentShares = shares * 20;
+                    }
+                    return price * currentShares * usdjpy[idx];
+                });
+            } else {
+                const initialPrice = prices[0];
+                const shares = initialInvestment / initialPrice;
+                valueSeries = prices.map(p => p * shares);
+            }
+            jpyDatasets[id] = valueSeries;
+        }
+    }
+
+    function createCheckboxes() {
+        for (const [id, config] of Object.entries(assetConfig)) {
+            const container = document.getElementById(`${config.category}-assets`);
+            const checked = config.checked ? 'checked' : '';
+            
+            const html = `
+                <div class="flex items-center">
+                    <input type="checkbox" id="cb-${id.replace(/\s|\(|\)/g, '')}" class="hidden asset-checkbox" 
+                           onchange="updateChart()" data-id="${id}" ${checked}
+                           style="--active-color: ${config.color}">
+                    <label for="cb-${id.replace(/\s|\(|\)/g, '')}" class="flex items-center cursor-pointer p-2 rounded-lg text-sm font-bold w-full border-2 border-slate-200 transition text-slate-600 hover:bg-slate-50">
+                        <div class="check-circle w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition" style="border-color: ${config.color}">
+                             <svg class="w-3 h-3 text-white transform scale-0 transition-transform" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path></svg>
+                        </div>
+                        <span>${config.name}</span>
+                    </label>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('chart').getContext('2d');
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: [], datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'top',
+                        labels: { usePointStyle: true, padding: 20, font: { weight: 'bold' } }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                const id = context.dataset.assetId;
+                                const valYen = context.raw;
+                                const initialVal = jpyDatasets[id][0];
+                                const performance = ((valYen / initialVal) - 1) * 100;
+                                const formattedVal = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits:0 }).format(valYen);
+                                return `${context.dataset.label}: ${formattedVal} (${performance > 0 ? '+' : ''}${performance.toFixed(1)}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'year', displayFormats: { 'year': 'yyyy年', 'month': 'yyyy年M月'} },
+                        grid: { color: '#e2e8f0' },
+                        ticks: { color: '#475569' }
+                    },
+                    y: {
+                        grid: { color: '#e2e8f0' },
+                        ticks: {
+                            callback: function(value) { return (value / 10000).toLocaleString() + '万円'; },
+                            color: '#475569'
+                        },
+                        title: { display: true, text: '円建て評価額 (初期投資100万円)' }
+                    }
+                },
+                elements: {
+                    point: { radius: 0, hitRadius: 20 },
+                    line: { borderWidth: 2.5, tension: 0.2 }
+                }
+            }
+        });
+        updateChart();
+    }
+
+    window.setRange = function(range, btn) {
+        currentRange = range;
+        document.querySelectorAll('.year-btn').forEach(b => {
+            b.className = 'year-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-white text-slate-500 hover:bg-slate-100 border';
+        });
+        btn.className = 'year-btn px-4 py-1.5 text-xs font-bold rounded-full transition bg-indigo-600 text-white shadow-md';
+        updateChart();
+    }
+
+    window.updateChart = function() {
+        const selectedIds = Array.from(document.querySelectorAll('.asset-checkbox:checked')).map(cb => cb.dataset.id);
+        
+        let start = 0, end = labels.length;
+        if (currentRange !== 'all') {
+            start = labels.findIndex(l => l.startsWith(currentRange));
+            end = labels.findLastIndex(l => l.startsWith(currentRange)) + 1;
+        }
+
+        const rangeLabels = (start === -1) ? [] : labels.slice(start, end);
+        
+        myChart.data.labels = rangeLabels;
+        myChart.data.datasets = selectedIds.map(id => {
+            const dataSlice = (start === -1) ? [] : jpyDatasets[id].slice(start, end);
+            return {
+                label: assetConfig[id].name,
+                assetId: id,
+                data: dataSlice,
+                borderColor: assetConfig[id].color,
+                backgroundColor: assetConfig[id].color + '33',
+            };
+        });
+        
+        myChart.options.scales.x.time.unit = (currentRange === 'all') ? 'year' : 'month';
+        myChart.update();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        processData();
+        createCheckboxes();
+        initChart();
     });
-    updateChart();
-};
 </script>
 </body>
 </html>
