@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建てパフォーマンス（完全版）</title>
+<title>主要資産 円建てパフォーマンス（完成版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -208,9 +208,7 @@ function setupEventListeners() {
     updateDashboard();
   });
   
-  document.getElementById('chart').addEventListener('mouseleave', () => {
-    if(!selectedAssetKey) updateDashboard(); 
-  });
+  // マウスが外れた際のリセット処理を削除済み
 }
 
 function getStartIndex() {
@@ -326,7 +324,6 @@ const customLabelPlugin = {
     const datasets = chart.data.datasets;
     const labelPoints = [];
 
-    // 1. ラベル情報の収集
     datasets.forEach((ds, i) => {
       const meta = chart.getDatasetMeta(i);
       if (meta.hidden) return;
@@ -357,13 +354,12 @@ const customLabelPlugin = {
       }
     });
 
-    // 2. Y座標でソート
     labelPoints.sort((a, b) => a.y - b.y);
 
-    // 3. 重なり解消（下方向への押し出し）
     const spacing = 4;
     const labelHeight = 24; 
 
+    // 下方向へずらす
     for (let i = 1; i < labelPoints.length; i++) {
         const prev = labelPoints[i - 1];
         const curr = labelPoints[i];
@@ -372,16 +368,12 @@ const customLabelPlugin = {
         }
     }
 
-    // 4. はみ出し補正（下から上への押し上げ）
+    // はみ出し補正
     const bottomEdge = chart.chartArea.bottom;
     const last = labelPoints[labelPoints.length - 1];
     
-    // 一番下がはみ出ていたら
     if (last && last.drawY + labelHeight / 2 > bottomEdge) {
-        // まず一番下をチャート下端に合わせる
         last.drawY = bottomEdge - labelHeight / 2;
-        
-        // 下から順に重なりをチェックして上にずらす
         for (let i = labelPoints.length - 2; i >= 0; i--) {
             const next = labelPoints[i + 1];
             const curr = labelPoints[i];
@@ -391,7 +383,6 @@ const customLabelPlugin = {
         }
     }
 
-    // 5. 描画
     ctx.save();
     ctx.font = 'bold 12px "Inter", sans-serif';
     ctx.textAlign = 'left';
@@ -400,7 +391,7 @@ const customLabelPlugin = {
     const paddingX = 8;
     const paddingY = 4;
     const cornerRadius = 4;
-    const labelXOffset = 20; // 少し離す
+    const labelXOffset = 20;
 
     labelPoints.forEach(p => {
       const textMetrics = ctx.measureText(p.label);
@@ -412,16 +403,14 @@ const customLabelPlugin = {
       const boxW = textWidth + paddingX * 2;
       const boxH = textHeight + paddingY * 2;
 
-      // 引出線
       ctx.beginPath();
       ctx.strokeStyle = p.color;
       ctx.lineWidth = 1;
       ctx.moveTo(p.x, p.y); 
       ctx.lineTo(chart.chartArea.right + 5, p.drawY);
-      ctx.lineTo(boxX, p.drawY); // 箱まで繋げる
+      ctx.lineTo(boxX, p.drawY);
       ctx.stroke();
 
-      // 背景ボックス
       ctx.fillStyle = p.bgColor;
       ctx.strokeStyle = p.color;
       ctx.lineWidth = 1.5;
@@ -442,7 +431,6 @@ const customLabelPlugin = {
       ctx.fill();
       ctx.stroke();
 
-      // テキスト
       ctx.fillStyle = p.color;
       ctx.fillText(p.label, boxX + paddingX, p.drawY);
     });
