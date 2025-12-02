@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主要資産 円建てパフォーマンス（マイナス圏可視化版）</title>
+<title>主要資産 円建てパフォーマンス（マイナス圏強調版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -318,33 +318,30 @@ function toggleAssetSelection(key) {
   updateDashboard();
 }
 
-// --- PLUGIN: マイナス圏の背景色変更 ---
+// --- PLUGIN: マイナス圏の背景色強調 ---
 const negativeZonePlugin = {
   id: 'negativeZone',
   beforeDraw: (chart) => {
     const { ctx, chartArea, scales } = chart;
     const yAxis = scales.y;
     
-    // 0%ラインのピクセル位置を取得
     const zeroPixel = yAxis.getPixelForValue(0);
     const bottomPixel = chartArea.bottom;
     const topPixel = chartArea.top;
 
-    // 0%ラインがチャートの描画範囲内、またはチャートの上にある場合のみ描画
     if (zeroPixel < bottomPixel) {
-        // 描画開始位置（0%ラインか、チャートの上端か）
         const startY = Math.max(zeroPixel, topPixel);
         
         ctx.save();
-        // マイナス圏の背景色（薄い赤グレー）
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.03)'; 
+        // 修正点: 少し濃いめの赤グレーに変更
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.06)'; 
         ctx.fillRect(chartArea.left, startY, chartArea.width, bottomPixel - startY);
         
-        // 0%ラインの強調（少し濃い線）
+        // 0%ラインの強調
         if (zeroPixel >= topPixel && zeroPixel <= bottomPixel) {
             ctx.beginPath();
             ctx.lineWidth = 1.5;
-            ctx.strokeStyle = '#94a3b8'; // slate-400
+            ctx.strokeStyle = '#94a3b8';
             ctx.moveTo(chartArea.left, zeroPixel);
             ctx.lineTo(chartArea.right, zeroPixel);
             ctx.stroke();
@@ -485,7 +482,6 @@ function renderChart() {
   myChart = new Chart(ctx, {
     type: 'line',
     data: { labels: [], datasets: [] },
-    // プラグイン登録（negativeZonePluginを追加）
     plugins: [negativeZonePlugin, customLabelPlugin],
     options: {
       responsive: true,
