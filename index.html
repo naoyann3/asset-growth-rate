@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>主要資産 円建てパフォーマンス（完全版）</title>
+<title>主要資産 円建てパフォーマンス（日本語・スマホ最適化版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -27,58 +27,73 @@
 
   details > summary { list-style: none; cursor: pointer; }
   details > summary::-webkit-details-marker { display: none; }
+
+  /* 横スクロールのフェード効果 */
+  .scroll-fade-right {
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+  }
 </style>
 </head>
 <body class="p-3 md:p-8 max-w-[1600px] mx-auto bg-slate-50 pb-20">
 
   <header class="mb-6 md:mb-10 text-center md:text-left md:flex md:justify-between md:items-end border-b border-slate-200 pb-4 md:pb-6">
     <div>
-      <h1 class="text-2xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-2">
-        Market Performance
+      <h1 class="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+        主要資産パフォーマンス推移
       </h1>
-      <p class="text-slate-500 font-medium flex flex-col md:flex-row items-center md:items-start justify-center md:justify-start gap-1 md:gap-2 text-xs md:text-base">
-        <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold">JPY BASIS</span>
-        <span>2021.01 - 2025.11 (Stock Split Adjusted)</span>
+      <p class="text-slate-500 font-medium flex flex-col md:flex-row items-center md:items-start justify-center md:justify-start gap-1 md:gap-2 text-xs md:text-sm">
+        <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold">円建て換算</span>
+        <span>2021.01 - 2025.11 (株式分割調整済み)</span>
       </p>
     </div>
     <div class="mt-2 md:mt-0 text-right hidden md:block">
-      <div class="text-[10px] text-slate-400 font-mono tracking-widest uppercase mb-1">Last Updated</div>
-      <div class="text-xl font-bold text-slate-700 font-mono">2025.12.01</div>
+      <div class="text-[10px] text-slate-400 font-mono tracking-widest uppercase mb-1">最終更新日</div>
+      <div class="text-xl font-bold text-slate-700 font-mono">2025.12.03</div>
     </div>
   </header>
 
-  <div class="mb-6 overflow-x-auto pb-2 -mx-3 px-3 md:mx-0 md:px-0 md:overflow-visible">
-    <div class="flex md:flex-wrap gap-2 md:gap-4 min-w-max md:min-w-0">
-      <button class="period-btn active px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="all">All Time</button>
-      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2021">2021~</button>
-      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2022">2022~</button>
-      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2023">2023~</button>
-      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2024">2024~</button>
-      <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2025">2025~</button>
+  <!-- 期間選択エリア -->
+  <div class="mb-6">
+    <div class="overflow-x-auto pb-2 -mx-3 px-3 md:mx-0 md:px-0 md:overflow-visible scroll-fade-right">
+      <div class="flex md:flex-wrap gap-2 md:gap-4 min-w-max md:min-w-0">
+        <button class="period-btn active px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="all">全期間</button>
+        <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2021">2021年〜</button>
+        <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2022">2022年〜</button>
+        <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2023">2023年〜</button>
+        <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2024">2024年〜</button>
+        <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2025">2025年〜</button>
+      </div>
     </div>
+    <!-- スマホ用スクロール注意書き -->
+    <p class="text-[10px] text-slate-400 text-center md:hidden mt-1 opacity-80">
+      ← 横スクロールで期間を選択できます →
+    </p>
   </div>
 
   <div class="flex flex-col lg:grid lg:grid-cols-4 gap-6">
     
+    <!-- チャートエリア（メイン） -->
     <div class="lg:col-span-3 order-1 space-y-6">
       <div class="card h-[55vh] md:h-[650px] relative p-1 md:p-6 w-full">
         <canvas id="chart"></canvas>
       </div>
       
+      <!-- サマリー（日本語化） -->
       <div class="grid grid-cols-3 gap-2 md:gap-4">
         <div class="card bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 flex flex-col justify-center py-2 md:py-4 px-2 md:px-6 text-center md:text-left">
-          <div class="text-[8px] md:text-[10px] text-indigo-400 font-bold uppercase mb-1 tracking-wider">Top</div>
+          <div class="text-[8px] md:text-[10px] text-indigo-400 font-bold uppercase mb-1 tracking-wider">最高値 (Top)</div>
           <div class="flex flex-col md:flex-row items-center md:items-baseline gap-0 md:gap-2">
             <div class="text-sm md:text-2xl font-black text-indigo-900 truncate w-full" id="summary-best-name">-</div>
             <div class="text-[10px] md:text-sm font-bold text-indigo-600" id="summary-best-val">-</div>
           </div>
         </div>
         <div class="card bg-white border border-slate-100 flex flex-col justify-center py-2 md:py-4 px-2 md:px-6 text-center md:text-left">
-          <div class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Avg</div>
+          <div class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">平均 (Average)</div>
           <div class="text-sm md:text-2xl font-black text-slate-700" id="summary-avg">-</div>
         </div>
         <div class="card bg-white border border-slate-100 flex flex-col justify-center py-2 md:py-4 px-2 md:px-6 text-center md:text-left">
-          <div class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">Worst</div>
+          <div class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase mb-1 tracking-wider">最下位 (Worst)</div>
           <div class="flex flex-col md:flex-row items-center md:items-baseline gap-0 md:gap-2">
              <div class="text-sm md:text-2xl font-black text-slate-700 truncate w-full" id="summary-worst-name">-</div>
              <div class="text-[10px] md:text-sm font-bold text-slate-500" id="summary-worst-val">-</div>
@@ -87,18 +102,19 @@
       </div>
     </div>
 
+    <!-- 設定エリア -->
     <div class="lg:col-span-1 space-y-6 order-2">
       
       <div class="card p-0 overflow-hidden">
         <details class="group" open>
           <summary class="flex justify-between items-center p-4 md:p-6 bg-white cursor-pointer hover:bg-slate-50 transition">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Assets Setting</h3>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">表示銘柄の選択</h3>
             <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <div class="px-4 pb-4 md:px-6 md:pb-6 border-t border-slate-100 pt-4">
             <div class="flex justify-end gap-2 mb-3">
-              <button id="btn-select-all" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">Select All</button>
-              <button id="btn-select-none" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">Clear</button>
+              <button id="btn-select-all" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">全選択</button>
+              <button id="btn-select-none" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">解除</button>
             </div>
             <div class="grid grid-cols-2 gap-2" id="asset-toggles"></div>
           </div>
@@ -107,8 +123,8 @@
 
       <div class="card h-[400px] lg:h-[calc(100vh-450px)] min-h-[300px] flex flex-col">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex justify-between items-center">
-          <span>Ranking</span>
-          <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500" id="ranking-period-label">All Time</span>
+          <span>騰落率ランキング</span>
+          <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500" id="ranking-period-label">全期間</span>
         </h3>
         <div class="flex-1 overflow-y-auto ranking-scroll pr-1 space-y-1" id="ranking-list"></div>
       </div>
@@ -118,7 +134,7 @@
 
 <script>
 // =========================================================
-//  DATA DEFINITIONS (2021/01 - 2025/11) : JPY Converted
+//  データ定義 (2021/01 - 2025/11) : 円建て換算済み
 // =========================================================
 
 const db = {
@@ -331,7 +347,7 @@ function toggleAssetSelection(key) {
   updateDashboard();
 }
 
-// --- PLUGIN: マイナス圏の背景色強調 (濃色版) ---
+// --- PLUGIN: マイナス圏の背景色強調 (Darker) ---
 const negativeZonePlugin = {
   id: 'negativeZone',
   beforeDraw: (chart) => {
@@ -346,7 +362,6 @@ const negativeZonePlugin = {
         const startY = Math.max(zeroPixel, topPixel);
         
         ctx.save();
-        // 修正: 0.15 (15%の濃さ)
         ctx.fillStyle = 'rgba(220, 38, 38, 0.15)'; 
         ctx.fillRect(chartArea.left, startY, chartArea.width, bottomPixel - startY);
         
@@ -489,6 +504,8 @@ function renderChart() {
   const ctx = document.getElementById('chart').getContext('2d');
   Chart.defaults.font.family = "'Inter', sans-serif";
   
+  const isMobile = window.innerWidth < 768; // スマホ判定
+
   myChart = new Chart(ctx, {
     type: 'line',
     data: { labels: [], datasets: [] },
@@ -514,7 +531,9 @@ function renderChart() {
       },
       plugins: {
         legend: { display: false },
+        // 修正点: スマホならツールチップを無効化
         tooltip: {
+          enabled: !isMobile, 
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           titleColor: '#1e293b',
           bodyColor: '#334155',
