@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>主要資産 円建てパフォーマンス（日本語・スマホ最適化版）</title>
+<title>主要資産 円建てパフォーマンス（完成版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -28,7 +28,6 @@
   details > summary { list-style: none; cursor: pointer; }
   details > summary::-webkit-details-marker { display: none; }
 
-  /* 横スクロールのフェード効果 */
   .scroll-fade-right {
     mask-image: linear-gradient(to right, black 90%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
@@ -53,7 +52,6 @@
     </div>
   </header>
 
-  <!-- 期間選択エリア -->
   <div class="mb-6">
     <div class="overflow-x-auto pb-2 -mx-3 px-3 md:mx-0 md:px-0 md:overflow-visible scroll-fade-right">
       <div class="flex md:flex-wrap gap-2 md:gap-4 min-w-max md:min-w-0">
@@ -65,7 +63,6 @@
         <button class="period-btn px-4 py-2 rounded-full border border-slate-200 font-bold text-xs md:text-sm whitespace-nowrap" data-period="2025">2025年〜</button>
       </div>
     </div>
-    <!-- スマホ用スクロール注意書き -->
     <p class="text-[10px] text-slate-400 text-center md:hidden mt-1 opacity-80">
       ← 横スクロールで期間を選択できます →
     </p>
@@ -73,13 +70,11 @@
 
   <div class="flex flex-col lg:grid lg:grid-cols-4 gap-6">
     
-    <!-- チャートエリア（メイン） -->
     <div class="lg:col-span-3 order-1 space-y-6">
       <div class="card h-[55vh] md:h-[650px] relative p-1 md:p-6 w-full">
         <canvas id="chart"></canvas>
       </div>
       
-      <!-- サマリー（日本語化） -->
       <div class="grid grid-cols-3 gap-2 md:gap-4">
         <div class="card bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 flex flex-col justify-center py-2 md:py-4 px-2 md:px-6 text-center md:text-left">
           <div class="text-[8px] md:text-[10px] text-indigo-400 font-bold uppercase mb-1 tracking-wider">最高値 (Top)</div>
@@ -102,7 +97,6 @@
       </div>
     </div>
 
-    <!-- 設定エリア -->
     <div class="lg:col-span-1 space-y-6 order-2">
       
       <div class="card p-0 overflow-hidden">
@@ -217,24 +211,20 @@ function setupEventListeners() {
       if (selectedAssetKey && !activeKeys.includes(selectedAssetKey)) {
         selectedAssetKey = null;
       }
-      updateDashboard();
+      updateDashboard('none');
     });
   });
 
   document.getElementById('btn-select-all').addEventListener('click', () => {
     document.querySelectorAll('.asset-checkbox').forEach(c => c.checked = true);
     activeKeys = Object.keys(db);
-    updateDashboard();
+    updateDashboard('none');
   });
   document.getElementById('btn-select-none').addEventListener('click', () => {
     document.querySelectorAll('.asset-checkbox').forEach(c => c.checked = false);
     activeKeys = [];
     selectedAssetKey = null;
-    updateDashboard();
-  });
-  
-  document.getElementById('chart').addEventListener('mouseleave', () => {
-    if(!selectedAssetKey) updateDashboard(); 
+    updateDashboard('none');
   });
   
   if (window.innerWidth < 768) {
@@ -248,7 +238,7 @@ function getStartIndex() {
   return labels.indexOf(target);
 }
 
-function updateDashboard() {
+function updateDashboard(mode = 'default') {
   const startIdx = getStartIndex();
   const slicedLabels = labels.slice(startIdx);
   
@@ -276,7 +266,7 @@ function updateDashboard() {
 
   myChart.data.labels = slicedLabels;
   myChart.data.datasets = datasets;
-  myChart.update();
+  myChart.update(mode);
 
   updateRankingAndSummary(activeKeys, startIdx);
   document.getElementById('ranking-period-label').textContent = document.querySelector('.period-btn.active').textContent;
@@ -344,10 +334,10 @@ function toggleAssetSelection(key) {
   } else {
     selectedAssetKey = key;
   }
-  updateDashboard();
+  updateDashboard('none');
 }
 
-// --- PLUGIN: マイナス圏の背景色強調 (Darker) ---
+// --- PLUGIN: マイナス圏の背景色強調 ---
 const negativeZonePlugin = {
   id: 'negativeZone',
   beforeDraw: (chart) => {
@@ -504,7 +494,7 @@ function renderChart() {
   const ctx = document.getElementById('chart').getContext('2d');
   Chart.defaults.font.family = "'Inter', sans-serif";
   
-  const isMobile = window.innerWidth < 768; // スマホ判定
+  const isMobile = window.innerWidth < 768; 
 
   myChart = new Chart(ctx, {
     type: 'line',
@@ -526,14 +516,13 @@ function renderChart() {
           toggleAssetSelection(key);
         } else {
           selectedAssetKey = null;
-          updateDashboard();
+          updateDashboard('none');
         }
       },
       plugins: {
         legend: { display: false },
-        // 修正点: スマホならツールチップを無効化
         tooltip: {
-          enabled: !isMobile, 
+          enabled: !isMobile, // スマホではツールチップを無効化
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           titleColor: '#1e293b',
           bodyColor: '#334155',
