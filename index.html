@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>主要資産 円建てパフォーマンス（注釈追記版）</title>
+<title>主要資産 円建てパフォーマンス（積立シミュレーション追加版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -32,6 +32,15 @@
     mask-image: linear-gradient(to right, black 90%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
   }
+  
+  .simulation-result-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+  }
+  .simulation-result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+  }
 </style>
 </head>
 <body class="p-3 md:p-8 max-w-[1600px] mx-auto bg-slate-50 pb-20">
@@ -46,7 +55,6 @@
           <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold">円建て換算</span>
           <span>2021.01 - 2025.11 (株式分割調整済み)</span>
         </p>
-        <!-- 修正点：算出基準の注釈を追加 -->
         <p class="text-slate-400 text-[10px] md:text-xs">
           ※算出基準：各月終値（金・銀は月次平均価格）
         </p>
@@ -98,6 +106,79 @@
           <div class="flex flex-col md:flex-row items-center md:items-baseline gap-0 md:gap-2">
              <div class="text-sm md:text-2xl font-black text-slate-700 truncate w-full" id="summary-worst-name">-</div>
              <div class="text-[10px] md:text-sm font-bold text-slate-500" id="summary-worst-val">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 積立投資シミュレーションセクション追加 -->
+      <div class="card mt-6">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center">
+          <span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded mr-2">NEW</span>
+          積立投資シミュレーション
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">月々の積立額（円）</label>
+            <input type="number" id="monthly-amount" value="20000" min="1000" step="1000" 
+                   class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 font-medium">
+            <p class="text-xs text-slate-500 mt-1">1,000円〜10,000,000円</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">積立開始年</label>
+            <select id="start-year" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 font-medium">
+              <option value="2021">2021年</option>
+              <option value="2022" selected>2022年</option>
+              <option value="2023">2023年</option>
+              <option value="2024">2024年</option>
+              <option value="2025">2025年</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">積立開始月</label>
+            <select id="start-month" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 font-medium">
+              <option value="01">1月</option>
+              <option value="02">2月</option>
+              <option value="03">3月</option>
+              <option value="04">4月</option>
+              <option value="05">5月</option>
+              <option value="06">6月</option>
+              <option value="07">7月</option>
+              <option value="08">8月</option>
+              <option value="09">9月</option>
+              <option value="10" selected>10月</option>
+              <option value="11">11月</option>
+              <option value="12">12月</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button id="simulate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              シミュレーション実行
+            </button>
+          </div>
+        </div>
+        
+        <div class="text-sm text-slate-600 mb-6 p-4 bg-slate-50 rounded-lg">
+          <p class="font-medium mb-1">シミュレーションの仮定:</p>
+          <ul class="list-disc pl-5 space-y-1 text-slate-500">
+            <li>選択した開始月から毎月、指定した金額を積み立てます</li>
+            <li>各月の終値（金・銀は平均価格）で購入したと仮定</li>
+            <li>手数料・税金は考慮していません</li>
+            <li>2025年11月末時点での評価額を計算</li>
+          </ul>
+        </div>
+        
+        <div id="simulation-results" class="space-y-4">
+          <!-- シミュレーション結果がここに動的に追加されます -->
+          <div class="text-center py-10 text-slate-400">
+            <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <p class="font-medium">シミュレーション結果がここに表示されます</p>
+            <p class="text-sm mt-1">上記の設定を入力して「シミュレーション実行」をクリックしてください</p>
           </div>
         </div>
       </div>
@@ -176,11 +257,224 @@ let currentPeriod = 'all';
 let activeKeys = Object.keys(db);
 let selectedAssetKey = null;
 
+// =========================================================
+//  積立投資シミュレーション関数
+// =========================================================
+
+// 積立シミュレーション計算関数
+function calculateMonthlyInvestment(assetKey, monthlyAmount, startDate) {
+  const data = db[assetKey];
+  const startIndex = labels.indexOf(startDate);
+  
+  // 開始日がデータ範囲外の場合はnullを返す
+  if (startIndex === -1 || startIndex >= data.length) return null;
+  
+  let totalUnits = 0; // 累計取得単位数
+  let totalInvestment = 0; // 総投資額
+  
+  // 指定開始月から最終月まで積立計算
+  for (let i = startIndex; i < data.length; i++) {
+    const price = data[i]; // その月の価格
+    const unitsBought = monthlyAmount / price; // その月に購入できる単位数
+    totalUnits += unitsBought;
+    totalInvestment += monthlyAmount;
+  }
+  
+  const currentValue = totalUnits * data[data.length - 1]; // 現在の資産価値
+  const profit = currentValue - totalInvestment; // 損益額
+  const profitPercentage = (profit / totalInvestment) * 100; // 損益率
+  
+  // 積立回数（月数）の計算
+  const investmentMonths = data.length - startIndex;
+  
+  return {
+    totalInvestment,
+    currentValue,
+    profit,
+    profitPercentage,
+    totalUnits,
+    finalPrice: data[data.length - 1],
+    investmentMonths,
+    assetKey
+  };
+}
+
+// 全資産のシミュレーション実行
+function runAllSimulations(monthlyAmount, startDate) {
+  const results = {};
+  
+  // 現在選択されている資産のみを対象にする
+  activeKeys.forEach(key => {
+    const result = calculateMonthlyInvestment(key, monthlyAmount, startDate);
+    if (result) {
+      results[key] = {
+        ...result,
+        label: meta[key].label,
+        color: meta[key].color
+      };
+    }
+  });
+  
+  return results;
+}
+
+// シミュレーション結果を表示する関数
+function displaySimulationResults(results) {
+  const container = document.getElementById('simulation-results');
+  container.innerHTML = '';
+  
+  if (Object.keys(results).length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-10 text-slate-500">
+        <p class="font-medium">選択された資産がありません</p>
+        <p class="text-sm mt-1">左のパネルで資産を選択してください</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // 結果を損益率でソート（高い順）
+  const sortedResults = Object.entries(results).sort((a, b) => {
+    return b[1].profitPercentage - a[1].profitPercentage;
+  });
+  
+  // シミュレーション設定情報を表示
+  const monthlyAmount = document.getElementById('monthly-amount').value;
+  const startYear = document.getElementById('start-year').value;
+  const startMonth = document.getElementById('start-month').value;
+  
+  const summaryCard = document.createElement('div');
+  summaryCard.className = 'bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-6';
+  summaryCard.innerHTML = `
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+      <div>
+        <h4 class="font-bold text-slate-900 text-sm mb-1">シミュレーション設定</h4>
+        <div class="flex flex-wrap gap-3 text-sm text-slate-600">
+          <div class="flex items-center">
+            <span class="font-medium">月々積立額:</span>
+            <span class="ml-2 font-bold">¥${parseInt(monthlyAmount).toLocaleString()}</span>
+          </div>
+          <div class="flex items-center">
+            <span class="font-medium">開始時期:</span>
+            <span class="ml-2 font-bold">${startYear}年${parseInt(startMonth)}月</span>
+          </div>
+          <div class="flex items-center">
+            <span class="font-medium">対象資産数:</span>
+            <span class="ml-2 font-bold">${sortedResults.length}資産</span>
+          </div>
+        </div>
+      </div>
+      <button id="reset-simulation" class="mt-3 md:mt-0 text-xs font-bold text-indigo-600 bg-white px-3 py-2 rounded-lg border border-indigo-200 hover:bg-indigo-50 transition">
+        設定をリセット
+      </button>
+    </div>
+  `;
+  container.appendChild(summaryCard);
+  
+  // リセットボタンのイベントリスナー
+  document.getElementById('reset-simulation').addEventListener('click', function() {
+    document.getElementById('monthly-amount').value = 20000;
+    document.getElementById('start-year').value = '2022';
+    document.getElementById('start-month').value = '10';
+    container.innerHTML = `
+      <div class="text-center py-10 text-slate-400">
+        <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>
+        <p class="font-medium">シミュレーション結果がここに表示されます</p>
+        <p class="text-sm mt-1">上記の設定を入力して「シミュレーション実行」をクリックしてください</p>
+      </div>
+    `;
+  });
+  
+  // 各資産の結果を表示
+  sortedResults.forEach(([key, result], index) => {
+    const card = document.createElement('div');
+    card.className = `simulation-result-card p-5 border border-slate-200 rounded-xl bg-white ${result.profit >= 0 ? 'border-l-emerald-500' : 'border-l-rose-500'}`;
+    card.style.borderLeftColor = result.color;
+    card.innerHTML = `
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex items-center">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3" style="background-color:${result.color}">
+            ${index + 1}
+          </div>
+          <div>
+            <div class="flex items-center">
+              <span class="font-bold text-slate-900 text-lg">${result.label}</span>
+              <span class="ml-2 text-xs font-medium px-2 py-1 rounded-full ${result.profitPercentage >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                ${result.profitPercentage >= 0 ? '+' : ''}${result.profitPercentage.toFixed(1)}%
+              </span>
+            </div>
+            <div class="text-xs text-slate-500 mt-1">${result.investmentMonths}ヶ月間の積立</div>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-slate-500">現在価値</div>
+          <div class="font-black text-xl ${result.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+            ¥${result.currentValue.toLocaleString()}
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-50 p-3 rounded-lg">
+          <div class="text-xs text-slate-500 mb-1">投資総額</div>
+          <div class="font-bold text-slate-900">¥${result.totalInvestment.toLocaleString()}</div>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-lg">
+          <div class="text-xs text-slate-500 mb-1">損益額</div>
+          <div class="font-bold ${result.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+            ¥${result.profit >= 0 ? '+' : ''}${result.profit.toLocaleString()}
+          </div>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-lg">
+          <div class="text-xs text-slate-500 mb-1">取得単位数</div>
+          <div class="font-bold text-slate-900">${result.totalUnits.toFixed(4)}</div>
+        </div>
+      </div>
+      
+      <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-sm">
+        <div class="text-slate-600">
+          <span class="font-medium">最終単価:</span> 
+          <span class="font-bold ml-1">¥${result.finalPrice.toLocaleString()}</span>
+        </div>
+        <button class="text-indigo-600 font-medium hover:text-indigo-800 text-sm flex items-center simulation-detail-btn" data-asset="${key}">
+          詳細を見る
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+    `;
+    
+    container.appendChild(card);
+  });
+  
+  // 詳細ボタンのイベントリスナー
+  document.querySelectorAll('.simulation-detail-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const assetKey = this.getAttribute('data-asset');
+      toggleAssetSelection(assetKey);
+      
+      // チャートエリアまでスクロール
+      document.querySelector('.card.h-[55vh]').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    });
+  });
+}
+
+// =========================================================
+//  既存の関数（変更なし）
+// =========================================================
+
 function init() {
   createAssetToggles();
   setupEventListeners();
   renderChart();
   updateDashboard();
+  setupSimulationListeners();
 }
 
 function createAssetToggles() {
@@ -217,7 +511,7 @@ function setupEventListeners() {
       if (selectedAssetKey && !activeKeys.includes(selectedAssetKey)) {
         selectedAssetKey = null;
       }
-      updateDashboard('none'); // アニメーションなしで即時更新
+      updateDashboard('none');
     });
   });
 
@@ -240,6 +534,50 @@ function setupEventListeners() {
   if (window.innerWidth < 768) {
     document.querySelector('details').removeAttribute('open');
   }
+}
+
+function setupSimulationListeners() {
+  const simulateBtn = document.getElementById('simulate-btn');
+  
+  if (simulateBtn) {
+    simulateBtn.addEventListener('click', function() {
+      const monthlyAmount = parseInt(document.getElementById('monthly-amount').value);
+      const startYear = document.getElementById('start-year').value;
+      const startMonth = document.getElementById('start-month').value;
+      
+      // 入力値のバリデーション
+      if (!monthlyAmount || monthlyAmount < 1000 || monthlyAmount > 10000000) {
+        alert('月々の積立額は1,000円〜10,000,000円の範囲で入力してください');
+        return;
+      }
+      
+      // 開始日のフォーマットを調整（例: "2021/01"）
+      const startDate = `${startYear}/${startMonth}`;
+      
+      // 開始日がデータ範囲内か確認
+      if (labels.indexOf(startDate) === -1 || labels.indexOf(startDate) >= labels.length) {
+        alert('選択した開始日はデータ範囲外です。別の日付を選択してください。');
+        return;
+      }
+      
+      // シミュレーション実行
+      const results = runAllSimulations(monthlyAmount, startDate);
+      displaySimulationResults(results);
+      
+      // シミュレーション結果までスクロール
+      document.getElementById('simulation-results').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    });
+  }
+  
+  // Enterキーでシミュレーション実行
+  document.getElementById('monthly-amount').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      document.getElementById('simulate-btn').click();
+    }
+  });
 }
 
 function getStartIndex() {
@@ -344,7 +682,7 @@ function toggleAssetSelection(key) {
   } else {
     selectedAssetKey = key;
   }
-  updateDashboard('none'); // アニメーションなしで即時反映
+  updateDashboard('none');
 }
 
 // --- PLUGIN: マイナス圏の背景色強調 (Darker) ---
@@ -526,13 +864,13 @@ function renderChart() {
           toggleAssetSelection(key);
         } else {
           selectedAssetKey = null;
-          updateDashboard('none'); // クリックで解除時もアニメーションなし
+          updateDashboard('none');
         }
       },
       plugins: {
         legend: { display: false },
         tooltip: {
-          enabled: !isMobile, // スマホではツールチップを無効化
+          enabled: !isMobile,
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           titleColor: '#1e293b',
           bodyColor: '#334155',
@@ -580,6 +918,7 @@ function renderChart() {
   });
 }
 
+// 初期化実行
 init();
 </script>
 </body>
